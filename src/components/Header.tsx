@@ -1,8 +1,8 @@
 'use client'
 
 import { AnimatePresence, motion } from 'framer-motion'
-import { Bookmark, LayoutDashboard, LogOut, Menu, Moon, Plus, Settings2, Sun, X } from 'lucide-react'
-import { useState } from 'react'
+import { Bookmark, LayoutDashboard, LogOut, Menu, Moon, Plus, Settings2, Sun, UserRound, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
@@ -13,6 +13,7 @@ import { Avatar as ShadcnAvatar, AvatarFallback, AvatarImage } from '@/component
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -38,9 +39,15 @@ export function Avatar({ name, photoURL, className }: { name: string; photoURL?:
 export default function Header() {
   const { user, logout, theme, isHydrated, toggleTheme } = useApp()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const router = useRouter()
   const pathname = usePathname() || '/'
-  const renderedTheme = isHydrated ? theme : 'light'
+  const renderedTheme = isMounted && isHydrated ? theme : 'light'
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsMounted(true), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -87,21 +94,30 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-full border border-line bg-surface p-1 pr-2 transition hover:border-[#a9c95a]"
+                  className="flex items-center gap-2 rounded-full border border-line bg-surface p-1 pr-3 transition hover:border-[#a9c95a]"
                   aria-label="Open account menu"
                 >
                   <ShadcnAvatar className="h-8 w-8">
                     <AvatarImage src={user.photoURL} alt={user.name} />
                     <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
                   </ShadcnAvatar>
+                  <span className="hidden max-w-28 truncate text-xs font-semibold text-text sm:block">{user.name}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
-                <DropdownMenuLabel className="px-3 pb-3 pt-2 font-normal">
-                  <p className="truncate text-sm font-semibold text-text">{user.name}</p>
-                  <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="px-3 pb-3 pt-2 font-normal">
+                    <p className="truncate text-sm font-semibold text-text">{user.name}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/profile">
+                    <UserRound size={16} className="text-muted" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link href="/dashboard">
                     <LayoutDashboard size={16} className="text-muted" />

@@ -2,13 +2,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function proxy(request: NextRequest) {
-  const hasSessionCookie =
-    request.cookies.has('better-auth.session_token') ||
-    request.cookies.has('__Secure-better-auth.session_token') ||
-    request.cookies.has('better-auth-session_token') ||
-    request.cookies.has('__Secure-better-auth-session_token')
+  const hasAuthCookie = request.cookies.getAll().some(({ name }) =>
+    /^(?:__Secure-)?better-auth\.(?:session_token|session_data)$/.test(name),
+  )
 
-  if (!hasSessionCookie) {
+  if (!hasAuthCookie) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set(
       'from',
@@ -27,6 +25,7 @@ export const config = {
     '/my-bookings/:path*',
     '/my-listings/:path*',
     '/wishlist/:path*',
+    '/profile/:path*',
     '/studios/edit/:path*',
   ],
 }

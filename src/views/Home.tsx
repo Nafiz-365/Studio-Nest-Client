@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
 import { ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarCheck, Camera, Check, Headphones, Search, ShieldCheck, Sparkles, Star, Wrench } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -11,7 +11,7 @@ import 'swiper/css/effect-fade'
 import SectionHeading from '../components/SectionHeading'
 import StudioCard from '../components/StudioCard'
 import { StudioCardSkeleton } from '../components/Loaders'
-import { categories } from '../data/studios'
+import { categories, seedStudios } from '../data/studios'
 import { useApp } from '../lib/AppContext'
 import { useLoading } from '../lib/useLoading'
 
@@ -54,17 +54,24 @@ const assurances = [
 ]
 
 export default function HomePage() {
-  const { studios } = useApp()
+  const { studios, isHydrated } = useApp()
   const loading = useLoading()
   const [activeSlide, setActiveSlide] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
   const heroRef = useRef<HTMLElement>(null)
   const reduceMotion = useReducedMotion()
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
   const imageY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '18%'])
   const contentY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '35%'])
   const heroOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.25])
-  const featured = [...studios].sort((a, b) => b.rating - a.rating || b.createdAt.localeCompare(a.createdAt)).slice(0, 6)
-  const averageRating = studios.length ? (studios.reduce((sum, studio) => sum + studio.rating, 0) / studios.length).toFixed(1) : '—'
+  useEffect(() => {
+    const timer = window.setTimeout(() => setIsMounted(true), 0)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const visibleStudios = isMounted && isHydrated ? studios : seedStudios
+  const featured = [...visibleStudios].sort((a, b) => b.rating - a.rating || b.createdAt.localeCompare(a.createdAt)).slice(0, 6)
+  const averageRating = visibleStudios.length ? (visibleStudios.reduce((sum, studio) => sum + studio.rating, 0) / visibleStudios.length).toFixed(1) : '—'
 
   return (
     <>
@@ -121,7 +128,7 @@ export default function HomePage() {
 
       <section className="border-b border-line bg-surface">
         <div className="container-shell grid grid-cols-2 divide-x divide-line py-2 md:grid-cols-4">
-          {[[String(studios.length), 'independent spaces'], [`${averageRating}/5`, 'average guest rating'], [String(categories.length), 'creative disciplines'], ['24/7', 'real human support']].map(([number, label]) => (
+          {[[String(visibleStudios.length), 'independent spaces'], [`${averageRating}/5`, 'average guest rating'], [String(categories.length), 'creative disciplines'], ['24/7', 'real human support']].map(([number, label]) => (
             <div key={label} className="px-4 py-7 text-center sm:px-8"><p className="font-display text-2xl font-semibold tracking-[-0.05em] sm:text-3xl">{number}</p><p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted sm:text-xs">{label}</p></div>
           ))}
         </div>
@@ -144,7 +151,7 @@ export default function HomePage() {
           <SectionHeading eyebrow="Choose your canvas" title="What are you making today?" description="Start with the kind of room you need. We’ll take care of the search from there." align="center" />
           <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             {categories.map((category, index) => {
-              const count = studios.filter((studio) => studio.category === category.name).length
+              const count = visibleStudios.filter((studio) => studio.category === category.name).length
               return (
                 <motion.div key={category.name} initial={{ opacity: 0, y: 35, rotate: index % 2 ? 1.5 : -1.5 }} whileInView={{ opacity: 1, y: 0, rotate: 0 }} viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.65, delay: index * 0.08, ease: [0.22, 1, 0.36, 1] }}>
                   <Link href={`/studios?category=${encodeURIComponent(category.name)}`} className="group relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-[22px] bg-[#1a1c17] p-5 text-white">

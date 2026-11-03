@@ -24,7 +24,6 @@ import { getTokenFromClient } from "./getTokenFromClient";
 const STORAGE = {
     studios: "studionest.studios.v1",
     bookings: "studionest.bookings.v1",
-    session: "studionest.session.v1",
     wishlist: "studionest.wishlist.v1",
     theme: "studionest.theme.v1",
 };
@@ -116,9 +115,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         try {
-            const savedUser = readStorage<User | null>(STORAGE.session, null);
-            if (savedUser) setUser(savedUser);
-
             const savedStudios = readStorage<Studio[] | null>(
                 STORAGE.studios,
                 null,
@@ -292,17 +288,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             // Ignore persistence failures.
         }
     }, [bookings, isHydrated]);
-
-    useEffect(() => {
-        if (!isHydrated) return;
-        try {
-            if (user)
-                localStorage.setItem(STORAGE.session, JSON.stringify(user));
-            else localStorage.removeItem(STORAGE.session);
-        } catch {
-            // Ignore persistence failures.
-        }
-    }, [user, isHydrated]);
 
     useEffect(() => {
         if (!isHydrated) return;
