@@ -1,10 +1,10 @@
-import Profile from '@/views/Profile'
-import ProtectedRoute from '@/components/ProtectedRoute'
+import Profile from "@/views/Profile";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function Page() {
-  return (
-    <ProtectedRoute>
-      <Profile />
-    </ProtectedRoute>
-  )
+    return (
+        <ProtectedRoute>
+            <Profile />
+        </ProtectedRoute>
+    );
 }
