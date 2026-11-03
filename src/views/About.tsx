@@ -69,6 +69,8 @@ export default function About() {
                     className="relative"
                 >
                     <Image
+                        height={5000}
+                        width={8000}
                         src="/images/studio-cinema.jpg"
                         alt="Independent filmmakers collaborating on set"
                         className="aspect-16/8 min-h-85 w-full rounded-[30px] object-cover"
@@ -141,6 +143,8 @@ export default function About() {
                 <div className="container-shell grid items-center gap-12 lg:grid-cols-[.85fr_1fr] lg:gap-20">
                     <div className="relative">
                         <Image
+                            height={5000}
+                            width={8000}
                             src="/images/studio-art.jpg"
                             alt="A bright independent artist studio"
                             className="aspect-4/5 w-full rounded-[28px] object-cover"
