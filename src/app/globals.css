@@ -128,17 +128,34 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  ::selection {
+    background: #d9ff63;
+    color: #171915;
+  }
+
   body {
     @apply bg-background text-foreground;
+    overflow-x: hidden;
+    text-rendering: optimizeLegibility;
   }
+
   html {
     @apply font-sans scroll-smooth;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
 @layer components {
   .container-shell {
-    @apply mx-auto w-full max-w-[1280px] px-5 sm:px-8 lg:px-10;
+    @apply mx-auto w-full max-w-[1280px] px-4 sm:px-8 lg:px-10;
   }
 
   .section-space {
@@ -168,6 +185,9 @@
   .btn-primary,
   .btn-secondary,
   .btn-ghost,
+  .btn-light,
+  .btn-small,
+  .btn-danger,
   .btn-danger-subtle {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#a9c95a]/60 disabled:pointer-events-none disabled:opacity-50;
   }
@@ -182,6 +202,18 @@
 
   .btn-ghost {
     @apply text-muted hover:bg-soft hover:text-text;
+  }
+
+  .btn-light {
+    @apply border border-white/20 bg-white/10 text-white backdrop-blur-md hover:border-[#d9ff63] hover:bg-[#d9ff63] hover:text-[#171915];
+  }
+
+  .btn-small {
+    @apply min-h-9 px-4 text-xs;
+  }
+
+  .btn-danger {
+    @apply border border-red-500/25 bg-red-500/10 text-red-600 hover:bg-red-500/15;
   }
 
   .btn-danger-subtle {
@@ -226,5 +258,20 @@
 
   .spinner {
     @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
   }
 }

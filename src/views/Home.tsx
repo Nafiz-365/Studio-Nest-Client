@@ -1,11 +1,12 @@
 'use client'
 
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion'
-import { ArrowDown, ArrowRight, ArrowUpRight, BadgeCheck, CalendarCheck, Camera, Check, Headphones, Search, ShieldCheck, Sparkles, Star, Wrench } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { ArrowDown, ArrowLeft, ArrowRight, ArrowUpRight, BadgeCheck, CalendarCheck, Camera, Check, Headphones, Pause, Play, Search, ShieldCheck, Sparkles, Star, Wrench } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Autoplay, EffectFade } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
+import type { Swiper as SwiperInstance } from 'swiper'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import SectionHeading from '../components/SectionHeading'
@@ -14,6 +15,7 @@ import { StudioCardSkeleton } from '../components/Loaders'
 import { categories } from '../data/studios'
 import type { Studio } from '../types'
 import { useLoading } from '../lib/useLoading'
+import { Button } from '@/components/ui/button'
 
 const slides = [
   {
@@ -62,75 +64,126 @@ export default function HomePage({
 }) {
   const loading = useLoading()
   const [activeSlide, setActiveSlide] = useState(0)
+  const [isHeroPaused, setIsHeroPaused] = useState(false)
   const heroRef = useRef<HTMLElement>(null)
+  const swiperRef = useRef<SwiperInstance | null>(null)
   const reduceMotion = useReducedMotion()
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] })
   const imageY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '18%'])
-  const contentY = useTransform(scrollYProgress, [0, 1], ['0%', reduceMotion ? '0%' : '35%'])
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.85], [1, 0.25])
   const featured = featuredStudios.slice(0, 6)
   const averageRating = studios.length ? (studios.reduce((sum, studio) => sum + studio.rating, 0) / studios.length).toFixed(1) : '—'
 
+  useEffect(() => {
+    const autoplay = swiperRef.current?.autoplay
+    if (!autoplay) return
+    if (isHeroPaused || reduceMotion) autoplay.stop()
+    else autoplay.start()
+  }, [isHeroPaused, reduceMotion])
+
+  const showSlide = (index: number) => {
+    swiperRef.current?.slideToLoop(index)
+    setActiveSlide(index)
+  }
+
+  const showPreviousSlide = () => {
+    swiperRef.current?.slidePrev()
+  }
+
+  const showNextSlide = () => {
+    swiperRef.current?.slideNext()
+  }
+
   return (
     <>
-      <section ref={heroRef} className="relative isolate min-h-[calc(100svh-76px)] overflow-hidden bg-[#141611] text-white">
-        <motion.div style={{ y: imageY }} className="absolute -inset-y-[10%] inset-x-0">
+      <div className="relative">
+      <section ref={heroRef} className="relative isolate min-h-[680px] overflow-hidden bg-[#141611] text-white sm:min-h-[calc(100svh-76px)]">
+        <motion.div style={{ y: imageY }} className="absolute -inset-y-[10%] inset-x-0 scale-[1.03]">
           <Swiper
             modules={[Autoplay, EffectFade]}
             effect="fade"
             speed={reduceMotion ? 0 : 1200}
-            autoplay={reduceMotion ? false : { delay: 5600, disableOnInteraction: false }}
+            autoplay={reduceMotion || isHeroPaused ? false : { delay: 5600, disableOnInteraction: false }}
             loop
+            onSwiper={(swiper) => { swiperRef.current = swiper }}
             onSlideChange={(swiper) => setActiveSlide(swiper.realIndex)}
             className="h-full w-full"
           >
             {slides.map((slide) => (
               <SwiperSlide key={slide.image}>
-                <img src={slide.image} alt="Creative studio interior" className="h-full w-full object-cover" />
+                <img src={slide.image} alt="Creative studio interior" className="h-full w-full object-cover brightness-[.72] saturate-[.82] transition duration-1000" />
               </SwiperSlide>
             ))}
           </Swiper>
         </motion.div>
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(12,14,10,.9)_0%,rgba(12,14,10,.55)_52%,rgba(12,14,10,.15)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(12,14,10,.85)_0%,transparent_48%)]" />
-        <motion.div style={{ y: contentY, opacity: heroOpacity }} className="container-shell relative flex min-h-[calc(100svh-76px)] flex-col justify-center pb-36 pt-20 sm:pb-32">
-          <div className="max-w-4xl">
+        <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,5,.96)_0%,rgba(5,7,5,.7)_48%,rgba(5,7,5,.28)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,7,5,.92)_0%,rgba(5,7,5,.18)_52%,rgba(5,7,5,.2)_100%)]" />
+        <div className="container-shell relative z-20 flex min-h-[680px] flex-col justify-center pb-48 pt-24 sm:min-h-[calc(100svh-76px)] sm:pb-28 sm:pt-16">
+          <div className="max-w-4xl rounded-[28px] bg-black/10 p-1 sm:bg-black/15 sm:p-5 sm:backdrop-blur-[1px]">
             {slides.map((slide, index) => index === activeSlide && (
-              <motion.div key={index} initial="hidden" animate="visible" variants={{ visible: { transition: { staggerChildren: reduceMotion ? 0 : 0.1 } } }}>
-                <motion.p variants={{ hidden: { opacity: 0, y: 15 }, visible: { opacity: 1, y: 0, transition: { duration: 0.55 } } }} className="mb-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9ff63]">
+              <div key={index}>
+                <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9ff63]">
                   <span className="h-px w-9 bg-[#d9ff63]" />{slide.eyebrow}
-                </motion.p>
+                </p>
                 <h1 className="font-display text-[clamp(3.35rem,8vw,7.8rem)] font-semibold leading-[0.88] tracking-[-0.072em]">
-                  <span className="block overflow-hidden pb-2"><motion.span className="block" variants={{ hidden: { y: '110%' }, visible: { y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } }}>{slide.title}</motion.span></span>
+                  <span className="block pb-2">{slide.title}</span>
                 </h1>
-                <motion.p variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.6 } } }} className="mt-6 max-w-xl text-base leading-7 text-white/70 sm:text-lg sm:leading-8">{slide.text}</motion.p>
-              </motion.div>
+                <p className="mt-6 max-w-xl text-base leading-7 text-white/70 sm:text-lg sm:leading-8">{slide.text}</p>
+              </div>
             ))}
-            <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.55, duration: 0.6 }} className="mt-9 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Link href="/studios" className="btn-primary !min-h-14 !px-7">Explore Studios<ArrowUpRight size={19} /></Link>
               <Link href="/add-studio" className="btn-light !min-h-14 !px-7">Host Your Space<ArrowRight size={18} /></Link>
-            </motion.div>
+            </div>
           </div>
-          <div className="absolute bottom-9 left-5 right-5 flex items-end justify-between gap-6 sm:left-8 sm:right-8 lg:left-10 lg:right-10">
+          <div className="absolute left-auto right-5 top-6 z-40 flex items-end gap-3 sm:right-8 lg:right-10">
             <div className="hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45 md:flex"><ArrowDown size={15} className="animate-bounce" />Scroll to discover</div>
-            <div className="flex flex-1 items-center gap-5 md:flex-initial">
+            <div className="flex items-center gap-3 md:gap-4">
               <span className="font-display text-sm text-white/75">0{activeSlide + 1}<span className="mx-2 text-white/30">/</span><span className="text-white/35">03</span></span>
-              <div className="flex flex-1 gap-2 md:w-48">
-                {slides.map((_, index) => <div key={index} className="h-[2px] flex-1 overflow-hidden bg-white/20">{index === activeSlide && <motion.div key={activeSlide} className="h-full origin-left bg-[#d9ff63]" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: reduceMotion ? 0.2 : 5.5, ease: 'linear' }} />}</div>)}
+              <div className="flex w-28 gap-2 md:w-48" role="tablist" aria-label="Hero slides">
+                {slides.map((slide, index) => (
+                  <button
+                    key={slide.image}
+                    type="button"
+                    role="tab"
+                    aria-label={`Show slide ${index + 1}`}
+                    aria-selected={index === activeSlide}
+                    onClick={() => {
+                      showSlide(index)
+                    }}
+                    className="group h-5 flex-1 py-2"
+                  >
+                    <span className="block h-[2px] overflow-hidden bg-white/20 transition group-hover:bg-white/50">
+                      {index === activeSlide && <motion.span key={activeSlide} className="block h-full origin-left bg-[#d9ff63]" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: reduceMotion || isHeroPaused ? 0.2 : 5.5, ease: 'linear' }} />}
+                    </span>
+                  </button>
+                ))}
               </div>
             </div>
+            <button type="button" onClick={() => setIsHeroPaused((paused) => !paused)} className="icon-button !h-9 !w-9 !border-white/20 !bg-white/10 !text-white hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915]" aria-label={isHeroPaused ? 'Play hero slideshow' : 'Pause hero slideshow'}>
+              {isHeroPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}
+            </button>
             <p className="hidden max-w-[180px] text-right text-[10px] uppercase tracking-[0.15em] text-white/45 lg:block">{slides[activeSlide].tag}</p>
           </div>
-        </motion.div>
+          <div className="pointer-events-none absolute inset-y-0 left-3 right-3 z-40 flex items-center justify-between sm:left-6 sm:right-6 lg:left-8 lg:right-8">
+            <Button type="button" variant="outline" size="icon" onClick={showPreviousSlide} className="pointer-events-auto !size-10 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Previous hero slide">
+              <ArrowLeft size={16} />
+            </Button>
+            <Button type="button" variant="outline" size="icon" onClick={showNextSlide} className="pointer-events-auto !size-10 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Next hero slide">
+              <ArrowRight size={16} />
+            </Button>
+          </div>
+        </div>
       </section>
 
-      <section className="border-b border-line bg-surface">
-        <div className="container-shell grid grid-cols-2 divide-x divide-line py-2 md:grid-cols-4">
+      <section className="absolute inset-x-0 bottom-0 z-30 border-b border-line bg-surface/95 backdrop-blur-md">
+        <div className="container-shell grid grid-cols-2 divide-x divide-line py-2 sm:grid-cols-4">
           {[[String(studios.length), 'independent spaces'], [`${averageRating}/5`, 'average guest rating'], [String(categories.length), 'creative disciplines'], ['24/7', 'real human support']].map(([number, label]) => (
             <div key={label} className="px-4 py-7 text-center sm:px-8"><p className="font-display text-2xl font-semibold tracking-[-0.05em] sm:text-3xl">{number}</p><p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted sm:text-xs">{label}</p></div>
           ))}
         </div>
       </section>
+      </div>
 
       <section className="section-space">
         <div className="container-shell">

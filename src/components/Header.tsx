@@ -43,6 +43,7 @@ export default function Header() {
   const router = useRouter()
   const pathname = usePathname() || '/'
   const renderedTheme = isMounted && isHydrated ? theme : 'light'
+  const visibleUser = isMounted && isHydrated ? user : null
 
   useEffect(() => {
     const timer = window.setTimeout(() => setIsMounted(true), 0)
@@ -57,8 +58,10 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line bg-bg/90 backdrop-blur-xl">
-      <div className="container-shell flex h-[76px] items-center justify-between gap-5">
-        <Logo />
+      <div className="container-shell flex h-[76px] items-center justify-between gap-3 sm:gap-5">
+        <div className="min-w-0 shrink">
+          <Logo />
+        </div>
         <nav className="hidden items-center gap-1 lg:flex" aria-label="Main navigation">
           {links.map((link) => {
             const isActive = link.to === '/' ? pathname === '/' : pathname.startsWith(link.to)
@@ -69,7 +72,7 @@ export default function Header() {
             )
           })}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             onClick={toggleTheme}
@@ -89,7 +92,7 @@ export default function Header() {
             </AnimatePresence>
           </button>
 
-          {user ? (
+          {visibleUser ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -98,17 +101,17 @@ export default function Header() {
                   aria-label="Open account menu"
                 >
                   <ShadcnAvatar className="h-8 w-8">
-                    <AvatarImage src={user.photoURL} alt={user.name} />
-                    <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                    <AvatarImage src={visibleUser.photoURL} alt={visibleUser.name} />
+                    <AvatarFallback>{getInitials(visibleUser.name)}</AvatarFallback>
                   </ShadcnAvatar>
-                  <span className="hidden max-w-28 truncate text-xs font-semibold text-text sm:block">{user.name}</span>
+                  <span className="hidden max-w-28 truncate text-xs font-semibold text-text sm:block">{visibleUser.name}</span>
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-64">
                 <DropdownMenuGroup>
                   <DropdownMenuLabel className="px-3 pb-3 pt-2 font-normal">
-                    <p className="truncate text-sm font-semibold text-text">{user.name}</p>
-                    <p className="mt-0.5 truncate text-xs text-muted">{user.email}</p>
+                    <p className="truncate text-sm font-semibold text-text">{visibleUser.name}</p>
+                    <p className="mt-0.5 truncate text-xs text-muted">{visibleUser.email}</p>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
@@ -205,7 +208,7 @@ export default function Header() {
                   </motion.div>
                 )
               })}
-              {!user && (
+              {!visibleUser && (
                 <div className="mt-4 grid grid-cols-2 gap-3 border-t border-line pt-5 sm:hidden">
                   <Link href="/login" className="btn-secondary">Login</Link>
                   <Link href="/register" className="btn-primary">Register</Link>

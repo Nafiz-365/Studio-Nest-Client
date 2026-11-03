@@ -86,9 +86,9 @@ export default function Footer() {
             </form>
           </div>
         </div>
-        <div className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-7 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-7 text-xs text-white/40 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
           <p>© {COPYRIGHT_YEAR} StudioNest. Creative space, thoughtfully shared.</p>
-          <div className="flex gap-5"><Link href="/terms" className="transition hover:text-white">Terms & privacy</Link><span>Bookings subject to host agreement</span></div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2"><Link href="/terms" className="transition hover:text-white">Terms & privacy</Link><span>Bookings subject to host agreement</span></div>
         </div>
       </div>
     </footer>
