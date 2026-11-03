@@ -1,96 +1,110 @@
-import { jsPDF } from 'jspdf'
-import type { Booking, Studio } from '../types'
-import { formatDate, formatMoney, formatTime } from './utils'
+import { jsPDF } from "jspdf";
+import type { Booking, Studio } from "../types";
+import { formatDate, formatMoney, formatTime } from "./utils";
 
 export function downloadInvoice(booking: Booking, studio: Studio) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4' })
-  const pageWidth = doc.internal.pageSize.getWidth()
-  doc.setFillColor(24, 27, 21)
-  doc.rect(0, 0, pageWidth, 62, 'F')
-  doc.setFillColor(217, 255, 99)
-  doc.circle(24, 25, 8, 'F')
-  doc.setTextColor(24, 27, 21)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(10)
-  doc.text('SN', 24, 28, { align: 'center' })
-  doc.setTextColor(248, 247, 241)
-  doc.setFontSize(22)
-  doc.text('StudioNest', 39, 29)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(9)
-  doc.setTextColor(190, 193, 181)
-  doc.text('CREATIVE SPACE, THOUGHTFULLY SHARED', 39, 37)
-  doc.setTextColor(217, 255, 99)
-  doc.setFontSize(9)
-  doc.text('BOOKING INVOICE', pageWidth - 20, 28, { align: 'right' })
-  doc.setTextColor(248, 247, 241)
-  doc.text(booking.id.toUpperCase(), pageWidth - 20, 37, { align: 'right' })
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    doc.setFillColor(24, 27, 21);
+    doc.rect(0, 0, pageWidth, 62, "F");
+    doc.setFillColor(217, 255, 99);
+    doc.circle(24, 25, 8, "F");
+    doc.setTextColor(24, 27, 21);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10);
+    doc.text("SN", 24, 28, { align: "center" });
+    doc.setTextColor(248, 247, 241);
+    doc.setFontSize(22);
+    doc.text("StudioNest", 39, 29);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(190, 193, 181);
+    doc.text("CREATIVE SPACE, THOUGHTFULLY SHARED", 39, 37);
+    doc.setTextColor(217, 255, 99);
+    doc.setFontSize(9);
+    doc.text("BOOKING INVOICE", pageWidth - 20, 28, { align: "right" });
+    doc.setTextColor(248, 247, 241);
+    doc.text(booking.id.toUpperCase(), pageWidth - 20, 37, { align: "right" });
 
-  doc.setTextColor(25, 28, 22)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(24)
-  doc.text('Your studio reservation', 20, 84)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 103, 94)
-  doc.text(`Issued to ${booking.userName} · ${booking.userEmail}`, 20, 93)
+    doc.setTextColor(25, 28, 22);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.text("Your studio reservation", 20, 84);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 103, 94);
+    doc.text(`Issued to ${booking.userName} · ${booking.userEmail}`, 20, 93);
 
-  doc.setDrawColor(220, 221, 212)
-  doc.line(20, 104, pageWidth - 20, 104)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(25, 28, 22)
-  doc.setFontSize(15)
-  doc.text(studio.title, 20, 119)
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(10)
-  doc.setTextColor(100, 103, 94)
-  doc.text(studio.address, 20, 127)
-  doc.text(`Hosted by ${studio.ownerName}`, 20, 134)
+    doc.setDrawColor(220, 221, 212);
+    doc.line(20, 104, pageWidth - 20, 104);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(25, 28, 22);
+    doc.setFontSize(15);
+    doc.text(studio.title, 20, 119);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(100, 103, 94);
+    doc.text(studio.address, 20, 127);
+    doc.text(`Hosted by ${studio.ownerName}`, 20, 134);
 
-  const details = [
-    ['SESSION DATE', formatDate(booking.date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })],
-    ['SESSION HOURS', `${formatTime(booking.startTime)} - ${formatTime(booking.endTime)} (${booking.hours} hours)`],
-    ['CREW SIZE', `${booking.guests} people`],
-    ['STATUS', booking.status],
-  ]
-  details.forEach(([label, value], index) => {
-    const y = 153 + index * 13
-    doc.setFontSize(8)
-    doc.setTextColor(125, 128, 117)
-    doc.text(label, 20, y)
-    doc.setFontSize(10)
-    doc.setTextColor(25, 28, 22)
-    doc.text(value, 67, y)
-  })
+    const details = [
+        [
+            "SESSION DATE",
+            formatDate(booking.date, {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+            }),
+        ],
+        [
+            "SESSION HOURS",
+            `${formatTime(booking.startTime)} - ${formatTime(booking.endTime)} (${booking.hours} hours)`,
+        ],
+        ["CREW SIZE", `${booking.guests} people`],
+        ["STATUS", booking.status],
+    ];
+    details.forEach(([label, value], index) => {
+        const y = 153 + index * 13;
+        doc.setFontSize(8);
+        doc.setTextColor(125, 128, 117);
+        doc.text(label, 20, y);
+        doc.setFontSize(10);
+        doc.setTextColor(25, 28, 22);
+        doc.text(value, 67, y);
+    });
 
-  const boxTop = 210
-  doc.setFillColor(245, 244, 237)
-  doc.roundedRect(20, boxTop, pageWidth - 40, 48, 3, 3, 'F')
-  const costs = [
-    [`Studio hire (${booking.hours} hrs)`, formatMoney(booking.subtotal)],
-    ['Creator service fee', formatMoney(booking.serviceFee)],
-    ['Refundable security deposit', formatMoney(booking.deposit)],
-  ]
-  costs.forEach(([label, value], index) => {
-    const y = boxTop + 11 + index * 10
-    doc.setFontSize(9)
-    doc.setTextColor(100, 103, 94)
-    doc.text(label, 27, y)
-    doc.setTextColor(25, 28, 22)
-    doc.text(value, pageWidth - 27, y, { align: 'right' })
-  })
-  doc.setDrawColor(210, 211, 201)
-  doc.line(27, boxTop + 38, pageWidth - 27, boxTop + 38)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(11)
-  doc.text('TOTAL', 27, boxTop + 45)
-  doc.setFontSize(14)
-  doc.text(formatMoney(booking.total), pageWidth - 27, boxTop + 45, { align: 'right' })
+    const boxTop = 210;
+    doc.setFillColor(245, 244, 237);
+    doc.roundedRect(20, boxTop, pageWidth - 40, 48, 3, 3, "F");
+    const costs = [
+        [`Studio hire (${booking.hours} hrs)`, formatMoney(booking.subtotal)],
+        ["Creator service fee", formatMoney(booking.serviceFee)],
+        ["Refundable security deposit", formatMoney(booking.deposit)],
+    ];
+    costs.forEach(([label, value], index) => {
+        const y = boxTop + 11 + index * 10;
+        doc.setFontSize(9);
+        doc.setTextColor(100, 103, 94);
+        doc.text(label, 27, y);
+        doc.setTextColor(25, 28, 22);
+        doc.text(value, pageWidth - 27, y, { align: "right" });
+    });
+    doc.setDrawColor(210, 211, 201);
+    doc.line(27, boxTop + 38, pageWidth - 27, boxTop + 38);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("TOTAL", 27, boxTop + 45);
+    doc.setFontSize(14);
+    doc.text(formatMoney(booking.total), pageWidth - 27, boxTop + 45, {
+        align: "right",
+    });
 
-  doc.setFont('helvetica', 'normal')
-  doc.setFontSize(8)
-  doc.setTextColor(120, 123, 113)
-  const note = 'This receipt was generated by StudioNest. The security deposit is refundable subject to the host agreement. Keep this document with your production records.'
-  doc.text(doc.splitTextToSize(note, pageWidth - 40), 20, 276)
-  doc.save(`StudioNest-${booking.id}-invoice.pdf`)
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 123, 113);
+    const note =
+        "This receipt was generated by StudioNest. The security deposit is refundable subject to the host agreement. Keep this document with your production records.";
+    doc.text(doc.splitTextToSize(note, pageWidth - 40), 20, 276);
+    doc.save(`StudioNest-${booking.id}-invoice.pdf`);
 }

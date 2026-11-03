@@ -41,11 +41,7 @@ function readStorage<T>(key: string, fallback: T): T {
     }
 }
 
-async function apiRequest(
-    url: string,
-    init: RequestInit,
-    email?: string,
-) {
+async function apiRequest(url: string, init: RequestInit, email?: string) {
     const token = await getTokenFromClient();
     const headers = new Headers(init.headers);
     if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -54,7 +50,9 @@ async function apiRequest(
     const response = await fetch(url, { ...init, headers });
     if (!response.ok) {
         const body = await response.text();
-        throw new Error(body || `API request failed with status ${response.status}`);
+        throw new Error(
+            body || `API request failed with status ${response.status}`,
+        );
     }
     return response;
 }
@@ -76,10 +74,10 @@ interface AppContextValue {
         password: string,
     ) => Promise<ActionResult>;
     logout: () => void;
-    addStudio: (draft: StudioDraft) => ActionResult;
-    updateStudio: (id: string, draft: StudioDraft) => ActionResult;
+    addStudio: (draft: StudioDraft) => Promise<ActionResult>;
+    updateStudio: (id: string, draft: StudioDraft) => Promise<ActionResult>;
     deleteStudio: (id: string) => Promise<ActionResult>;
-    addBooking: (input: BookingInput) => ActionResult;
+    addBooking: (input: BookingInput) => Promise<ActionResult>;
     cancelBooking: (id: string) => ActionResult;
     toggleWishlist: (studioId: string) => ActionResult;
 }
@@ -95,7 +93,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         {},
     );
     const [theme, setTheme] = useState<"light" | "dark">("light");
-    const { data: authSession, isPending: authPending } = authClient.useSession();
+    const { data: authSession, isPending: authPending } =
+        authClient.useSession();
 
     useEffect(() => {
         const sessionUser = authSession?.user;
@@ -198,8 +197,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             {},
                             email,
                         ),
-                        fetch(
+                        apiRequest(
                             `${API_BASE_URL}/wishlist/${encodeURIComponent(email)}`,
+                            {},
+                            email,
                         ),
                     ]);
 
@@ -256,7 +257,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     }
                 }
             } catch (error) {
-                console.error("Failed to load account data from the API.", error);
+                console.error(
+                    "Failed to load account data from the API.",
+                    error,
+                );
+                setStudios((current) =>
+                    current.filter((item) => item.ownerEmail !== email),
+                );
+                setBookings([]);
+                setWishlistMap((current) => {
+                    const next = { ...current };
+                    delete next[email];
+                    return next;
+                });
             }
         };
 
@@ -322,7 +335,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (error || !data?.user) {
                     return {
                         ok: false,
-                        message: error?.message ?? "Unable to log in with those credentials.",
+                        message:
+                            error?.message ??
+                            "Unable to log in with those credentials.",
                     };
                 }
                 return {
@@ -340,29 +355,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (error || !data?.user) {
                     return {
                         ok: false,
-                        message: error?.message ?? "Unable to create your account.",
+                        message:
+                            error?.message ?? "Unable to create your account.",
                     };
                 }
                 return {
                     ok: true,
-                    message: "Your StudioNest account is ready. You are now signed in.",
+                    message:
+                        "Your StudioNest account is ready. You are now signed in.",
                 };
             },
             logout: () => {
                 void authClient.signOut();
                 setUser(null);
             },
-            addStudio: (draft) => {
+            addStudio: async (draft) => {
                 if (!user)
                     return {
                         ok: false,
                         message:
                             "Your session is not authorized. Please log in again.",
                     };
-                const id = createId("studio");
                 const studio: Studio = {
                     ...draft,
-                    id,
+                    id: createId("studio"),
                     ownerEmail: user.email,
                     ownerName: user.name,
                     rating: 0,
@@ -373,23 +389,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     hostSince: String(getCurrentDate().getFullYear()),
                     responseTime: "New host · typically replies within a day",
                 };
-                setStudios((current) => [studio, ...current]);
-                apiRequest(`${API_BASE_URL}/add-studio`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(studio),
-                }, user.email).catch((error: unknown) => {
+                try {
+                    const response = await apiRequest(
+                        `${API_BASE_URL}/add-studio`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(studio),
+                        },
+                        user.email,
+                    );
+                    const data = (await response.json()) as {
+                        studio?: Studio & { _id?: string };
+                    };
+                    const savedStudio = data.studio
+                        ? {
+                              ...data.studio,
+                              id:
+                                  data.studio.id ||
+                                  (data.studio._id
+                                      ? String(data.studio._id)
+                                      : studio.id),
+                          }
+                        : studio;
+                    setStudios((current) => [savedStudio, ...current]);
+                } catch (error) {
                     console.error("Failed to create studio on the API.", error);
-                });
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The studio could not be created. Please try again.",
+                    };
+                }
                 return {
                     ok: true,
                     message: "Your studio is live and ready for discovery.",
-                    id,
+                    id: studio.id,
                 };
             },
-            updateStudio: (id, draft) => {
+            updateStudio: async (id, draft) => {
                 if (!user)
                     return {
                         ok: false,
@@ -408,20 +450,33 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         message: "Only the listing owner can edit this studio.",
                     };
                 }
+                try {
+                    await apiRequest(
+                        `${API_BASE_URL}/studio/${id}`,
+                        {
+                            method: "PATCH",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(draft),
+                        },
+                        user.email,
+                    );
+                } catch (error) {
+                    console.error("Failed to update studio on the API.", error);
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The studio could not be updated. Please try again.",
+                    };
+                }
                 setStudios((current) =>
                     current.map((studio) =>
                         studio.id === id ? { ...studio, ...draft } : studio,
                     ),
                 );
-                apiRequest(`${API_BASE_URL}/studio/${id}`, {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(draft),
-                }, user.email).catch((error: unknown) => {
-                    console.error("Failed to update studio on the API.", error);
-                });
                 return {
                     ok: true,
                     message: "Studio details updated successfully.",
@@ -449,27 +504,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     };
                 }
                 try {
-                    await apiRequest(`${API_BASE_URL}/studio/${id}`, {
-                        method: "DELETE",
-                    }, user.email);
+                    await apiRequest(
+                        `${API_BASE_URL}/studio/${id}`,
+                        {
+                            method: "DELETE",
+                        },
+                        user.email,
+                    );
                 } catch (error) {
                     console.error("Failed to delete studio on the API.", error);
                     return {
                         ok: false,
-                        message: error instanceof Error
-                            ? error.message
-                            : "The studio could not be deleted. Please try again.",
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The studio could not be deleted. Please try again.",
                     };
                 }
 
-                setStudios((current) => current.filter((studio) => studio.id !== id));
-                setBookings((current) => current.filter((booking) => booking.studioId !== id));
+                setStudios((current) =>
+                    current.filter((studio) => studio.id !== id),
+                );
+                setBookings((current) =>
+                    current.filter((booking) => booking.studioId !== id),
+                );
                 return {
                     ok: true,
                     message: `${existing.title} has been removed.`,
                 };
             },
-            addBooking: (input) => {
+            addBooking: async (input) => {
                 if (!user)
                     return {
                         ok: false,
@@ -508,7 +572,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     if (
                         booking.studioId !== input.studioId ||
                         booking.date !== input.date ||
-                        booking.status !== "Confirmed"
+                        !["Confirmed", "Pending"].includes(booking.status)
                     )
                         return false;
                     const bookedStart = Date.parse(
@@ -541,19 +605,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     status: "Pending",
                     createdAt: getCurrentDate().toISOString(),
                 };
-                setBookings((current) => [booking, ...current]);
-                apiRequest(`${API_BASE_URL}/booking`, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                        ...booking,
-                        studioTitle: studio.title,
-                    }),
-                }, user.email).catch((error: unknown) => {
-                    console.error("Failed to create booking on the API.", error);
-                });
+                try {
+                    const response = await apiRequest(
+                        `${API_BASE_URL}/booking`,
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                ...booking,
+                                studioTitle: studio.title,
+                            }),
+                        },
+                        user.email,
+                    );
+                    const data = (await response.json()) as {
+                        booking?: Booking & { _id?: string };
+                    };
+                    const savedBooking = data.booking
+                        ? {
+                              ...data.booking,
+                              id:
+                                  data.booking.id ||
+                                  (data.booking._id
+                                      ? String(data.booking._id)
+                                      : booking.id),
+                          }
+                        : booking;
+                    setBookings((current) => [savedBooking, ...current]);
+                } catch (error) {
+                    console.error(
+                        "Failed to create booking on the API.",
+                        error,
+                    );
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The booking could not be created. Please try again.",
+                    };
+                }
                 return {
                     ok: true,
                     message:
@@ -586,12 +679,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : item,
                     ),
                 );
-                apiRequest(`${API_BASE_URL}/booking/${id}/cancel`, {
-                    method: "PATCH",
-                    headers: {
+                apiRequest(
+                    `${API_BASE_URL}/booking/${id}/cancel`,
+                    {
+                        method: "PATCH",
+                        headers: {},
                     },
-                }, user.email).catch((error: unknown) => {
-                    console.error("Failed to cancel booking on the API.", error);
+                    user.email,
+                ).catch((error: unknown) => {
+                    console.error(
+                        "Failed to cancel booking on the API.",
+                        error,
+                    );
                 });
                 return {
                     ok: true,
@@ -616,12 +715,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : [...saved, studioId],
                     };
                 });
-                apiRequest(`${API_BASE_URL}/wishlist`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email: user.email, studioId }),
-                }, user.email).catch((error: unknown) => {
-                    console.error("Failed to update wishlist on the API.", error);
+                apiRequest(
+                    `${API_BASE_URL}/wishlist`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: user.email, studioId }),
+                    },
+                    user.email,
+                ).catch((error: unknown) => {
+                    console.error(
+                        "Failed to update wishlist on the API.",
+                        error,
+                    );
                 });
                 return {
                     ok: true,
