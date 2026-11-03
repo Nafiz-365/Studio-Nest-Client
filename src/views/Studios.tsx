@@ -25,6 +25,7 @@ import { categories } from "../data/studios";
 import { useLoading } from "../lib/useLoading";
 import { formatMoney } from "../lib/utils";
 import type { Studio } from "../types";
+import Image from "next/image";
 
 export default function Studios({ studios }: { studios: Studio[] }) {
     const loading = useLoading();
@@ -97,18 +98,20 @@ export default function Studios({ studios }: { studios: Studio[] }) {
         <>
             <section className="relative overflow-hidden border-b border-line bg-[#1a1c17] text-white">
                 <div className="absolute inset-y-0 right-0 hidden w-[38%] lg:block">
-                    <img
+                    <Image
+                        height={8000}
+                        width={5000}
                         src="/images/studio-cinema.jpg"
                         alt="Film crew working in a production studio"
                         className="h-full w-full object-cover opacity-55"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-[#1a1c17] to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-r from-[#1a1c17] to-transparent" />
                 </div>
                 <div className="container-shell relative py-16 sm:py-20 lg:py-24">
                     <motion.p
                         initial={{ opacity: 0, y: 12 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="eyebrow !text-[#d9ff63]"
+                        className="eyebrow text-[#d9ff63]!"
                     >
                         The studio directory
                     </motion.p>
@@ -136,7 +139,7 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                 </div>
             </section>
 
-            <section className="container-shell section-space !pt-8 sm:!pt-10">
+            <section className="container-shell section-space pt-8! sm:pt-10!">
                 <div className="rounded-[24px] border border-line bg-surface p-4 shadow-[0_12px_45px_rgba(25,30,18,.05)] sm:p-5">
                     <div className="flex flex-col gap-3 lg:flex-row">
                         <div className="relative flex-1">
@@ -150,7 +153,7 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                                 onChange={(event) =>
                                     updateSearchParam("q", event.target.value)
                                 }
-                                className="field !min-h-12 !pl-11"
+                                className="field min-h-12! pl-11!"
                                 placeholder="Search by name, city, or amenity…"
                             />
                         </div>
@@ -158,11 +161,11 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                             <Select
                                 value={category}
                                 onValueChange={(val) =>
-                                updateSearchParam("category", val ?? "All")
+                                    updateSearchParam("category", val ?? "All")
                                 }
                             >
                                 <SelectTrigger
-                                    className="!min-h-12"
+                                    className="min-h-12!"
                                     aria-label="Filter by category"
                                 >
                                     <SelectValue placeholder="All studio types" />
@@ -193,10 +196,12 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                         <div className="lg:w-52">
                             <Select
                                 value={sort}
-                                onValueChange={(val) => setSort(val ?? "recommended")}
+                                onValueChange={(val) =>
+                                    setSort(val ?? "recommended")
+                                }
                             >
                                 <SelectTrigger
-                                    className="!min-h-12"
+                                    className="min-h-12!"
                                     aria-label="Sort studios"
                                 >
                                     <SelectValue />
@@ -228,7 +233,9 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                             <p className="field-label">Location</p>
                             <Select
                                 value={location}
-                                onValueChange={(val) => setLocation(val ?? "All")}
+                                onValueChange={(val) =>
+                                    setLocation(val ?? "All")
+                                }
                             >
                                 <SelectTrigger aria-label="Filter by location">
                                     <SelectValue />
@@ -249,7 +256,9 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                             <p className="field-label">Minimum capacity</p>
                             <Select
                                 value={capacity}
-                                onValueChange={(val) => setCapacity(val ?? "Any")}
+                                onValueChange={(val) =>
+                                    setCapacity(val ?? "Any")
+                                }
                             >
                                 <SelectTrigger aria-label="Filter by capacity">
                                     <SelectValue />
@@ -288,7 +297,9 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                                 value={[maxPrice]}
                                 onValueChange={(value) =>
                                     setMaxPrice(
-                                        Array.isArray(value) ? Number(value[0]) : Number(value),
+                                        Array.isArray(value)
+                                            ? Number(value[0])
+                                            : Number(value),
                                     )
                                 }
                                 aria-label="Maximum price filter"
@@ -318,7 +329,7 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                         <button
                             type="button"
                             onClick={reset}
-                            className="btn-ghost !px-0 text-xs"
+                            className="btn-ghost px-0! text-xs"
                         >
                             <RotateCcw size={14} />
                             Clear all filters
@@ -370,7 +381,7 @@ export default function Studios({ studios }: { studios: Studio[] }) {
                 <div className="container-shell flex flex-col items-start justify-between gap-6 py-10 sm:flex-row sm:items-center">
                     <div>
                         <p className="eyebrow">Have a space of your own?</p>
-                        <h2 className="mt-3 font-display text-3xl font-semibold tracking-[-0.05em]">
+                        <h2 className="mt-3 font-display text-3xl font-semibold tracking-tighter">
                             Put your empty hours to work.
                         </h2>
                     </div>
