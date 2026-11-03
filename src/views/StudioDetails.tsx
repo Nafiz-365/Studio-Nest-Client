@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, ArrowRight, ArrowUpRight, BadgeCheck, CalendarDays, Check, ChevronLeft, ChevronRight, Clock3, Expand, Heart, MapPin, Maximize2, MessageCircle, Share2, ShieldCheck, Star, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
-import { useParams, usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Navigation, Pagination } from 'swiper/modules'
 import { Swiper, SwiperSlide } from 'swiper/react'
@@ -19,13 +19,18 @@ import StudioCard from '../components/StudioCard'
 import { useApp } from '../lib/AppContext'
 import { useLoading } from '../lib/useLoading'
 import { addDays, cn, formatDate, formatMoney, formatTime, getCurrentDate, getInitials, toDateInput } from '../lib/utils'
+import type { Studio } from '../types'
 
-export default function StudioDetails() {
-  const params = useParams<{ id?: string }>()
-  const id = params?.id
-  const { studios, bookings, user, wishlist, toggleWishlist } = useApp()
+export default function StudioDetails({
+  studio,
+  related,
+}: {
+  studio: Studio | null
+  related: Studio[]
+}) {
+  const { bookings, user, wishlist, toggleWishlist } = useApp()
   const loading = useLoading()
-  const studio = studios.find((item) => item.id === id)
+  const id = studio?.id
   const [bookingOpen, setBookingOpen] = useState(false)
   const [gallery, setGallery] = useState<SwiperType | null>(null)
   const [activeImage, setActiveImage] = useState(0)
@@ -48,7 +53,6 @@ export default function StudioDetails() {
   }
 
   const saved = wishlist.includes(studio.id)
-  const related = studios.filter((item) => item.id !== studio.id && item.category === studio.category).slice(0, 3)
   const openBooking = () => {
     if (!user) {
       toast.error('Log in to reserve this workspace. We’ll bring you right back.')

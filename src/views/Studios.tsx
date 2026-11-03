@@ -22,12 +22,11 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { categories } from "../data/studios";
-import { useApp } from "../lib/AppContext";
 import { useLoading } from "../lib/useLoading";
 import { formatMoney } from "../lib/utils";
+import type { Studio } from "../types";
 
-export default function Studios() {
-    const { studios } = useApp();
+export default function Studios({ studios }: { studios: Studio[] }) {
     const loading = useLoading();
     const router = useRouter();
     const pathname = usePathname() || "/studios";
