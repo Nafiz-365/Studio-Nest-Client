@@ -17,6 +17,8 @@ export const toDateInput = (date: Date) => {
     return local.toISOString().split("T")[0];
 };
 
+export const getCurrentDate = () => new Date();
+
 export const addDays = (date: Date, days: number) => {
     const next = new Date(date);
     next.setDate(next.getDate() + days);

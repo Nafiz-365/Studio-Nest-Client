@@ -1,13 +1,14 @@
 'use client'
 
-import { type ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { Toaster } from 'sonner'
 import Footer from '@/components/Footer'
 import Header from '@/components/Header'
 import { AppProvider, useApp } from '@/lib/AppContext'
 
 function AppShell({ children }: { children: ReactNode }) {
-  const { theme } = useApp()
+  const { theme, isHydrated } = useApp()
+  const renderedTheme = isHydrated ? theme : 'light'
   return (
     <div className="min-h-screen bg-bg text-text">
       <Header />
@@ -15,7 +16,7 @@ function AppShell({ children }: { children: ReactNode }) {
       <Footer />
       <Toaster
         position="top-right"
-        theme={theme}
+        theme={renderedTheme}
         richColors
         closeButton
         duration={4000}
@@ -31,7 +32,9 @@ function AppShell({ children }: { children: ReactNode }) {
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <AppProvider>
-      <AppShell>{children}</AppShell>
+      <Suspense fallback={<div className="min-h-screen bg-bg" />}>
+        <AppShell>{children}</AppShell>
+      </Suspense>
     </AppProvider>
   )
 }

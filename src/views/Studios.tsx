@@ -71,7 +71,7 @@ export default function Studios() {
         });
     }, [capacity, category, location, maxPrice, query, sort, studios]);
 
-    const updateSearchParam = (key: string, value: string) => {
+    const updateSearchParam = (key: string, value: string | null) => {
         const next = new URLSearchParams(searchParams?.toString() || "");
         if (!value || value === "All") next.delete(key);
         else next.set(key, value);
@@ -159,7 +159,7 @@ export default function Studios() {
                             <Select
                                 value={category}
                                 onValueChange={(val) =>
-                                    updateSearchParam("category", val)
+                                updateSearchParam("category", val ?? "All")
                                 }
                             >
                                 <SelectTrigger
@@ -194,7 +194,7 @@ export default function Studios() {
                         <div className="lg:w-52">
                             <Select
                                 value={sort}
-                                onValueChange={(val) => setSort(val)}
+                                onValueChange={(val) => setSort(val ?? "recommended")}
                             >
                                 <SelectTrigger
                                     className="!min-h-12"
@@ -229,7 +229,7 @@ export default function Studios() {
                             <p className="field-label">Location</p>
                             <Select
                                 value={location}
-                                onValueChange={(val) => setLocation(val)}
+                                onValueChange={(val) => setLocation(val ?? "All")}
                             >
                                 <SelectTrigger aria-label="Filter by location">
                                     <SelectValue />
@@ -250,7 +250,7 @@ export default function Studios() {
                             <p className="field-label">Minimum capacity</p>
                             <Select
                                 value={capacity}
-                                onValueChange={(val) => setCapacity(val)}
+                                onValueChange={(val) => setCapacity(val ?? "Any")}
                             >
                                 <SelectTrigger aria-label="Filter by capacity">
                                     <SelectValue />
@@ -287,7 +287,11 @@ export default function Studios() {
                                 max={250}
                                 step={5}
                                 value={[maxPrice]}
-                                onValueChange={([val]) => setMaxPrice(val)}
+                                onValueChange={(value) =>
+                                    setMaxPrice(
+                                        Array.isArray(value) ? Number(value[0]) : Number(value),
+                                    )
+                                }
                                 aria-label="Maximum price filter"
                             />
                             <div className="mt-1 flex justify-between text-[10px] text-muted">

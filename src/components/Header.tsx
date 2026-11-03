@@ -36,10 +36,11 @@ export function Avatar({ name, photoURL, className }: { name: string; photoURL?:
 }
 
 export default function Header() {
-  const { user, logout, theme, toggleTheme } = useApp()
+  const { user, logout, theme, isHydrated, toggleTheme } = useApp()
   const [mobileOpen, setMobileOpen] = useState(false)
   const router = useRouter()
   const pathname = usePathname() || '/'
+  const renderedTheme = isHydrated ? theme : 'light'
 
   const handleLogout = () => {
     logout()
@@ -66,17 +67,17 @@ export default function Header() {
             type="button"
             onClick={toggleTheme}
             className="icon-button"
-            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} theme`}
+            aria-label={`Switch to ${renderedTheme === 'light' ? 'dark' : 'light'} theme`}
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.span
-                key={theme}
+                key={renderedTheme}
                 initial={{ rotate: -40, opacity: 0 }}
                 animate={{ rotate: 0, opacity: 1 }}
                 exit={{ rotate: 40, opacity: 0 }}
                 transition={{ duration: 0.18 }}
               >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                {renderedTheme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
               </motion.span>
             </AnimatePresence>
           </button>

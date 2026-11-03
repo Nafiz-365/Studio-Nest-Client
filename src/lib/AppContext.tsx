@@ -8,6 +8,7 @@ import {
     useState,
     type ReactNode,
 } from "react";
+import { authClient } from "./auth-client";
 import { createSeedBookings, seedStudios } from "../data/studios";
 import type {
     ActionResult,
@@ -18,7 +19,8 @@ import type {
     StudioDraft,
     User,
 } from "../types";
-import { calculateHours, createId, toDateInput } from "./utils";
+import { calculateHours, createId, getCurrentDate, toDateInput } from "./utils";
+import { getTokenFromClient } from "./getTokenFromClient";
 
 const STORAGE = {
     studios: "studionest.studios.v1",
@@ -49,6 +51,24 @@ function readStorage<T>(key: string, fallback: T): T {
     }
 }
 
+async function apiRequest(
+    url: string,
+    init: RequestInit,
+    email?: string,
+) {
+    const token = await getTokenFromClient();
+    const headers = new Headers(init.headers);
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (email) headers.set("x-user-email", email);
+
+    const response = await fetch(url, { ...init, headers });
+    if (!response.ok) {
+        const body = await response.text();
+        throw new Error(body || `API request failed with status ${response.status}`);
+    }
+    return response;
+}
+
 interface AppContextValue {
     studios: Studio[];
     bookings: Booking[];
@@ -57,14 +77,15 @@ interface AppContextValue {
     theme: "light" | "dark";
     wishlist: string[];
     isHydrated: boolean;
+    isAuthPending: boolean;
     toggleTheme: () => void;
-    login: (email: string, password: string) => ActionResult;
+    login: (email: string, password: string) => Promise<ActionResult>;
     register: (
         name: string,
         email: string,
         photoURL: string,
         password: string,
-    ) => ActionResult;
+    ) => Promise<ActionResult>;
     googleLogin: () => User;
     logout: () => void;
     addStudio: (draft: StudioDraft) => ActionResult;
@@ -80,13 +101,30 @@ const AppContext = createContext<AppContextValue | null>(null);
 export function AppProvider({ children }: { children: ReactNode }) {
     const [isHydrated, setIsHydrated] = useState(false);
     const [studios, setStudios] = useState<Studio[]>(seedStudios);
-    const [bookings, setBookings] = useState<Booking[]>(createSeedBookings);
+    const [bookings, setBookings] = useState<Booking[]>([]);
     const [users, setUsers] = useState<AuthUser[]>([demoUser]);
     const [user, setUser] = useState<User | null>(null);
     const [wishlistMap, setWishlistMap] = useState<Record<string, string[]>>(
         {},
     );
     const [theme, setTheme] = useState<"light" | "dark">("light");
+    const { data: authSession, isPending: authPending } = authClient.useSession();
+
+    useEffect(() => {
+        const sessionUser = authSession?.user;
+        const timer = window.setTimeout(() => {
+            if (sessionUser) {
+                setUser({
+                    name: sessionUser.name,
+                    email: sessionUser.email,
+                    photoURL: sessionUser.image ?? "",
+                });
+            } else if (authSession === null) {
+                setUser(null);
+            }
+        }, 0);
+        return () => window.clearTimeout(timer);
+    }, [authSession]);
 
     useEffect(() => {
         try {
@@ -110,6 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             );
             if (savedBookings && Array.isArray(savedBookings))
                 setBookings(savedBookings);
+            else setBookings(createSeedBookings());
 
             const savedUsers = readStorage<AuthUser[] | null>(
                 STORAGE.users,
@@ -163,6 +202,89 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 // Graceful fallback to persistent seed storage
             });
     }, []);
+
+    useEffect(() => {
+        const email = authSession?.user?.email;
+        if (!email) return;
+
+        const loadAccountData = async () => {
+            try {
+                const [listingResponse, bookingResponse, wishlistResponse] =
+                    await Promise.all([
+                        apiRequest(
+                            `${API_BASE_URL}/my-studios/${encodeURIComponent(email)}`,
+                            {},
+                            email,
+                        ),
+                        apiRequest(
+                            `${API_BASE_URL}/my-bookings/${encodeURIComponent(email)}`,
+                            {},
+                            email,
+                        ),
+                        fetch(
+                            `${API_BASE_URL}/wishlist/${encodeURIComponent(email)}`,
+                        ),
+                    ]);
+
+                const listings = await listingResponse.json();
+                if (Array.isArray(listings)) {
+                    setStudios((current) => {
+                        const serverListings = listings.map(
+                            (item: Studio & { _id?: string }) => ({
+                                ...item,
+                                id:
+                                    item.id ||
+                                    (item._id
+                                        ? String(item._id)
+                                        : createId("studio")),
+                            }),
+                        );
+                        const listingIds = new Set(
+                            serverListings.map((item) => item.id),
+                        );
+                        return [
+                            ...serverListings,
+                            ...current.filter(
+                                (item) =>
+                                    item.ownerEmail !== email ||
+                                    !listingIds.has(item.id),
+                            ),
+                        ];
+                    });
+                }
+
+                const accountBookings = await bookingResponse.json();
+                if (Array.isArray(accountBookings)) {
+                    setBookings(
+                        accountBookings.map(
+                            (item: Booking & { _id?: string }) => ({
+                                ...item,
+                                id:
+                                    item.id ||
+                                    (item._id
+                                        ? String(item._id)
+                                        : createId("booking")),
+                            }),
+                        ),
+                    );
+                }
+
+                if (wishlistResponse.ok) {
+                    const wishlistData = await wishlistResponse.json();
+                    if (Array.isArray(wishlistData?.wishlist)) {
+                        setWishlistMap((current) => ({
+                            ...current,
+                            [email]: wishlistData.wishlist,
+                        }));
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to load account data from the API.", error);
+            }
+        };
+
+        void loadAccountData();
+    }, [authSession?.user?.email]);
 
     useEffect(() => {
         document.documentElement.classList.toggle("dark", theme === "dark");
@@ -233,54 +355,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
             theme,
             wishlist,
             isHydrated,
+            isAuthPending: authPending,
             toggleTheme: () =>
                 setTheme((current) => (current === "light" ? "dark" : "light")),
-            login: (email, password) => {
-                const account = users.find(
-                    (item) =>
-                        item.email.toLowerCase() === email.trim().toLowerCase(),
-                );
-                if (!account || account.password !== password) {
+            login: async (email, password) => {
+                const { data, error } = await authClient.signIn.email({
+                    email: email.trim().toLowerCase(),
+                    password,
+                });
+                if (error || !data?.user) {
                     return {
                         ok: false,
-                        message:
-                            "That email and password combination does not match our records.",
+                        message: error?.message ?? "Unable to log in with those credentials.",
                     };
                 }
-                setUser({
-                    name: account.name,
-                    email: account.email,
-                    photoURL: account.photoURL,
-                });
                 return {
                     ok: true,
-                    message: `Welcome back, ${account.name.split(" ")[0]}.`,
+                    message: `Welcome back, ${data.user.name.split(" ")[0]}.`,
                 };
             },
-            register: (name, email, photoURL, password) => {
-                const normalizedEmail = email.trim().toLowerCase();
-                if (
-                    users.some(
-                        (item) => item.email.toLowerCase() === normalizedEmail,
-                    )
-                ) {
+            register: async (name, email, photoURL, password) => {
+                const { data, error } = await authClient.signUp.email({
+                    name: name.trim(),
+                    email: email.trim().toLowerCase(),
+                    password,
+                    image: photoURL.trim() || undefined,
+                });
+                if (error || !data?.user) {
                     return {
                         ok: false,
-                        message:
-                            "An account already exists with this email. Try logging in instead.",
+                        message: error?.message ?? "Unable to create your account.",
                     };
                 }
-                const account: AuthUser = {
-                    name: name.trim(),
-                    email: normalizedEmail,
-                    photoURL: photoURL.trim(),
-                    password,
-                };
-                setUsers((current) => [...current, account]);
                 return {
                     ok: true,
-                    message:
-                        "Your StudioNest account is ready. Log in to start creating.",
+                    message: "Your StudioNest account is ready. You are now signed in.",
                 };
             },
             googleLogin: () => {
@@ -300,7 +409,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setUser(googleUser);
                 return googleUser;
             },
-            logout: () => setUser(null),
+            logout: () => {
+                void authClient.signOut();
+                setUser(null);
+            },
             addStudio: (draft) => {
                 if (!user)
                     return {
@@ -317,21 +429,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     rating: 0,
                     reviewsCount: 0,
                     reviews: [],
-                    createdAt: toDateInput(new Date()),
+                    createdAt: toDateInput(getCurrentDate()),
                     featured: false,
-                    hostSince: String(new Date().getFullYear()),
+                    hostSince: String(getCurrentDate().getFullYear()),
                     responseTime: "New host · typically replies within a day",
                 };
                 setStudios((current) => [studio, ...current]);
-                fetch(`${API_BASE_URL}/add-studio`, {
+                apiRequest(`${API_BASE_URL}/add-studio`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer demo-token`,
-                        "x-user-email": user.email,
                     },
                     body: JSON.stringify(studio),
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to create studio on the API.", error);
+                });
                 return {
                     ok: true,
                     message: "Your studio is live and ready for discovery.",
@@ -362,15 +474,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         studio.id === id ? { ...studio, ...draft } : studio,
                     ),
                 );
-                fetch(`${API_BASE_URL}/studio/${id}`, {
+                apiRequest(`${API_BASE_URL}/studio/${id}`, {
                     method: "PATCH",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer demo-token`,
-                        "x-user-email": user.email,
                     },
                     body: JSON.stringify(draft),
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to update studio on the API.", error);
+                });
                 return {
                     ok: true,
                     message: "Studio details updated successfully.",
@@ -403,13 +515,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setBookings((current) =>
                     current.filter((booking) => booking.studioId !== id),
                 );
-                fetch(`${API_BASE_URL}/studio/${id}`, {
+                apiRequest(`${API_BASE_URL}/studio/${id}`, {
                     method: "DELETE",
                     headers: {
-                        Authorization: `Bearer demo-token`,
-                        "x-user-email": user.email,
                     },
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to delete studio on the API.", error);
+                });
                 return {
                     ok: true,
                     message: `${existing.title} has been removed.`,
@@ -436,7 +548,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         message:
                             "Choose an end time at least one hour after your start time.",
                     };
-                if (input.date < toDateInput(new Date()))
+                if (input.date < toDateInput(getCurrentDate()))
                     return {
                         ok: false,
                         message:
@@ -448,12 +560,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         message: `This studio accommodates between 1 and ${studio.capacity} people.`,
                     };
                 }
-                const start = new Date(
-                    `${input.date}T${input.startTime}:00`,
-                ).getTime();
-                const end = new Date(
-                    `${input.date}T${input.endTime}:00`,
-                ).getTime();
+                const start = Date.parse(`${input.date}T${input.startTime}:00`);
+                const end = Date.parse(`${input.date}T${input.endTime}:00`);
                 const collision = bookings.find((booking) => {
                     if (
                         booking.studioId !== input.studioId ||
@@ -461,12 +569,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         booking.status !== "Confirmed"
                     )
                         return false;
-                    const bookedStart = new Date(
+                    const bookedStart = Date.parse(
                         `${booking.date}T${booking.startTime}:00`,
-                    ).getTime();
-                    const bookedEnd = new Date(
+                    );
+                    const bookedEnd = Date.parse(
                         `${booking.date}T${booking.endTime}:00`,
-                    ).getTime();
+                    );
                     return start < bookedEnd && end > bookedStart;
                 });
                 if (collision) {
@@ -489,10 +597,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     deposit: studio.deposit,
                     total: subtotal + serviceFee + studio.deposit,
                     status: "Pending",
-                    createdAt: new Date().toISOString(),
+                    createdAt: getCurrentDate().toISOString(),
                 };
                 setBookings((current) => [booking, ...current]);
-                fetch(`${API_BASE_URL}/booking`, {
+                apiRequest(`${API_BASE_URL}/booking`, {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -501,7 +609,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         ...booking,
                         studioTitle: studio.title,
                     }),
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to create booking on the API.", error);
+                });
                 return {
                     ok: true,
                     message:
@@ -534,13 +644,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : item,
                     ),
                 );
-                fetch(`${API_BASE_URL}/booking/${id}/cancel`, {
+                apiRequest(`${API_BASE_URL}/booking/${id}/cancel`, {
                     method: "PATCH",
                     headers: {
-                        Authorization: `Bearer demo-token`,
-                        "x-user-email": user.email,
                     },
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to cancel booking on the API.", error);
+                });
                 return {
                     ok: true,
                     message: "Booking cancelled. The host has been notified.",
@@ -564,11 +674,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : [...saved, studioId],
                     };
                 });
-                fetch(`${API_BASE_URL}/wishlist`, {
+                apiRequest(`${API_BASE_URL}/wishlist`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ email: user.email, studioId }),
-                }).catch(() => {});
+                }, user.email).catch((error: unknown) => {
+                    console.error("Failed to update wishlist on the API.", error);
+                });
                 return {
                     ok: true,
                     message: exists
@@ -591,6 +703,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             wishlist,
             wishlistMap,
             isHydrated,
+            authPending,
         ],
     );
 

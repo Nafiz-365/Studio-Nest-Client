@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUpRight, Instagram, Linkedin, Youtube } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -13,8 +13,29 @@ function XLogo({ size = 18 }: { size?: number }) {
   )
 }
 
+function InstagramLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>
+  )
+}
+
+function LinkedinLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M5.2 8.1A2.1 2.1 0 1 1 5.2 4a2.1 2.1 0 0 1 0 4.1ZM3.4 9.8h3.6V20H3.4V9.8Zm5.8 0h3.5v1.4h.1c.5-.9 1.7-1.8 3.5-1.8 3.7 0 4.4 2.4 4.4 5.5V20h-3.6v-4.5c0-1.1 0-2.6-1.6-2.6s-1.8 1.2-1.8 2.5V20H9.2V9.8Z" /></svg>
+  )
+}
+
+function YoutubeLogo({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.8 2.8 0 0 0-2-2C17.9 4.7 12 4.7 12 4.7s-5.9 0-7.6.5a2.8 2.8 0 0 0-2 2C2 8.9 2 12 2 12s0 3.1.4 4.8a2.8 2.8 0 0 0 2 2c1.7.5 7.6.5 7.6.5s5.9 0 7.6-.5a2.8 2.8 0 0 0 2-2c.4-1.7.4-4.8.4-4.8s0-3.1-.4-4.8ZM10 15.8V8.2l6 3.8-6 3.8Z" /></svg>
+  )
+}
+
+const COPYRIGHT_YEAR = '2026'
+
 export default function Footer() {
   const [email, setEmail] = useState('')
+
   const subscribe = (event: FormEvent) => {
     event.preventDefault()
     if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -37,9 +58,9 @@ export default function Footer() {
             <div className="mt-7 flex items-center gap-2">
               {[
                 { label: 'X', href: 'https://x.com', icon: <XLogo /> },
-                { label: 'Instagram', href: 'https://instagram.com', icon: <Instagram size={18} /> },
-                { label: 'LinkedIn', href: 'https://linkedin.com', icon: <Linkedin size={18} /> },
-                { label: 'YouTube', href: 'https://youtube.com', icon: <Youtube size={18} /> },
+                { label: 'Instagram', href: 'https://instagram.com', icon: <InstagramLogo /> },
+                { label: 'LinkedIn', href: 'https://linkedin.com', icon: <LinkedinLogo /> },
+                { label: 'YouTube', href: 'https://youtube.com', icon: <YoutubeLogo /> },
               ].map((social) => <a key={social.label} href={social.href} target="_blank" rel="noreferrer" aria-label={social.label} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/65 transition hover:border-[#d9ff63] hover:bg-[#d9ff63] hover:text-[#171915]">{social.icon}</a>)}
             </div>
           </div>
@@ -66,7 +87,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-7 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
-          <p suppressHydrationWarning>© {new Date().getFullYear()} StudioNest. Creative space, thoughtfully shared.</p>
+          <p>© {COPYRIGHT_YEAR} StudioNest. Creative space, thoughtfully shared.</p>
           <div className="flex gap-5"><Link href="/terms" className="transition hover:text-white">Terms & privacy</Link><span>Bookings subject to host agreement</span></div>
         </div>
       </div>

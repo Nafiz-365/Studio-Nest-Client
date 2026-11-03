@@ -31,8 +31,8 @@ export default function Login() {
       return
     }
     setSubmitting(true)
-    window.setTimeout(() => {
-      const result = login(email, password)
+    window.setTimeout(async () => {
+      const result = await login(email, password)
       setSubmitting(false)
       if (!result.ok) {
         setError(result.message)

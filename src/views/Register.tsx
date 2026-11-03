@@ -39,8 +39,8 @@ export default function Register() {
       return
     }
     setSubmitting(true)
-    window.setTimeout(() => {
-      const result = register(form.name, form.email, form.photoURL, form.password)
+    window.setTimeout(async () => {
+      const result = await register(form.name, form.email, form.photoURL, form.password)
       setSubmitting(false)
       if (!result.ok) {
         setError(result.message)

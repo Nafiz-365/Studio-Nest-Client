@@ -6,21 +6,20 @@ import { useApp } from '@/lib/AppContext'
 import { PageLoader } from '@/components/Loaders'
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, isHydrated } = useApp()
+  const { user, isHydrated, isAuthPending } = useApp()
   const router = useRouter()
   const pathname = usePathname()
 
   useEffect(() => {
-    if (isHydrated && !user) {
+    if (isHydrated && !isAuthPending && !user) {
       router.replace(`/login?from=${encodeURIComponent(pathname || '/')}`)
     }
-  }, [isHydrated, user, router, pathname])
+  }, [isHydrated, isAuthPending, user, router, pathname])
 
   // While checking local session or if not authenticated yet, show clean loader
-  if (!isHydrated || !user) {
+  if (!isHydrated || isAuthPending || !user) {
     return <PageLoader />
   }
 
   return <>{children}</>
 }
-

@@ -18,7 +18,7 @@ import { Avatar } from '../components/Header'
 import StudioCard from '../components/StudioCard'
 import { useApp } from '../lib/AppContext'
 import { useLoading } from '../lib/useLoading'
-import { addDays, cn, formatDate, formatMoney, formatTime, getInitials, toDateInput } from '../lib/utils'
+import { addDays, cn, formatDate, formatMoney, formatTime, getCurrentDate, getInitials, toDateInput } from '../lib/utils'
 
 export default function StudioDetails() {
   const params = useParams<{ id?: string }>()
@@ -32,7 +32,7 @@ export default function StudioDetails() {
   const router = useRouter()
   const pathname = usePathname()
   const availability = useMemo(() => Array.from({ length: 5 }, (_, index) => {
-    const date = toDateInput(addDays(new Date(), index + 1))
+    const date = toDateInput(addDays(getCurrentDate(), index + 1))
     return {
       date,
       reserved: bookings.filter((booking) => booking.studioId === id && booking.date === date && booking.status === 'Confirmed'),
