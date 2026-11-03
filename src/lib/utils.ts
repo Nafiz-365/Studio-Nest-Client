@@ -26,13 +26,25 @@ export const addDays = (date: Date, days: number) => {
 };
 
 export const formatDate = (
-    value: string,
+    value: string | Date | null | undefined,
     options?: Intl.DateTimeFormatOptions,
-) =>
-    new Intl.DateTimeFormat(
+) => {
+    if (!value) return "—";
+
+    const date =
+        value instanceof Date
+            ? value
+            : /^\d{4}-\d{2}-\d{2}$/.test(value)
+              ? new Date(`${value}T12:00:00`)
+              : new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "—";
+
+    return new Intl.DateTimeFormat(
         "en-US",
         options ?? { month: "short", day: "numeric", year: "numeric" },
-    ).format(new Date(`${value}T12:00:00`));
+    ).format(date);
+};
 
 export const timeToMinutes = (time: string) => {
     const [hours, minutes] = time.split(":").map(Number);

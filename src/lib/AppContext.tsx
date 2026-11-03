@@ -78,7 +78,7 @@ interface AppContextValue {
     logout: () => void;
     addStudio: (draft: StudioDraft) => ActionResult;
     updateStudio: (id: string, draft: StudioDraft) => ActionResult;
-    deleteStudio: (id: string) => ActionResult;
+    deleteStudio: (id: string) => Promise<ActionResult>;
     addBooking: (input: BookingInput) => ActionResult;
     cancelBooking: (id: string) => ActionResult;
     toggleWishlist: (studioId: string) => ActionResult;
@@ -428,7 +428,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     id,
                 };
             },
-            deleteStudio: (id) => {
+            deleteStudio: async (id) => {
                 if (!user)
                     return {
                         ok: false,
@@ -448,19 +448,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             "Only the listing owner can delete this studio.",
                     };
                 }
-                setStudios((current) =>
-                    current.filter((studio) => studio.id !== id),
-                );
-                setBookings((current) =>
-                    current.filter((booking) => booking.studioId !== id),
-                );
-                apiRequest(`${API_BASE_URL}/studio/${id}`, {
-                    method: "DELETE",
-                    headers: {
-                    },
-                }, user.email).catch((error: unknown) => {
+                try {
+                    await apiRequest(`${API_BASE_URL}/studio/${id}`, {
+                        method: "DELETE",
+                    }, user.email);
+                } catch (error) {
                     console.error("Failed to delete studio on the API.", error);
-                });
+                    return {
+                        ok: false,
+                        message: error instanceof Error
+                            ? error.message
+                            : "The studio could not be deleted. Please try again.",
+                    };
+                }
+
+                setStudios((current) => current.filter((studio) => studio.id !== id));
+                setBookings((current) => current.filter((booking) => booking.studioId !== id));
                 return {
                     ok: true,
                     message: `${existing.title} has been removed.`,

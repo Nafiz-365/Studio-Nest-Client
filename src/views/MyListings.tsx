@@ -14,13 +14,23 @@ import { formatMoney } from '../lib/utils'
 export default function MyListings() {
   const { studios, user, deleteStudio, bookings } = useApp()
   const [deleteTarget, setDeleteTarget] = useState<Studio | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const listings = studios.filter((studio) => studio.ownerEmail === user?.email)
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deleteTarget) return
-    const result = deleteStudio(deleteTarget.id)
-    if (result.ok) toast.success(result.message)
-    else toast.error(result.message)
+    setDeleting(true)
+    try {
+      const result = await deleteStudio(deleteTarget.id)
+      if (result.ok) {
+        toast.success(result.message)
+        setDeleteTarget(null)
+      } else {
+        toast.error(result.message)
+      }
+    } finally {
+      setDeleting(false)
+    }
   }
 
   return (
@@ -54,7 +64,7 @@ export default function MyListings() {
         })}</div> : <EmptyState icon={<Building2 size={28} />} title="Your next great listing starts here" description="You haven’t published a studio yet. Add your first space with clear photos, useful amenities, and a rate that works for you." actionLabel="Add your first studio" actionTo="/add-studio" />}
       </div>
       <div className="mt-10 flex flex-col items-start justify-between gap-5 rounded-[24px] bg-soft p-6 sm:flex-row sm:items-center sm:p-8"><div><h3 className="font-display text-xl font-semibold tracking-[-0.035em]">Make your listing more bookable.</h3><p className="mt-2 text-sm text-muted">Detailed inventories and recent photos help creators commit with confidence.</p></div><Link href="/how-it-works" className="btn-secondary shrink-0">Read the host guide<ArrowUpRight size={16} /></Link></div>
-      <ConfirmModal open={Boolean(deleteTarget)} onClose={() => setDeleteTarget(null)} title={`Delete ${deleteTarget?.title ?? 'this studio'}?`} description="This permanently removes the listing and its associated booking records from this browser. This action cannot be undone." confirmLabel="Delete studio" onConfirm={confirmDelete} />
+      <ConfirmModal open={Boolean(deleteTarget)} onClose={() => { if (!deleting) setDeleteTarget(null) }} title={`Delete ${deleteTarget?.title ?? 'this studio'}?`} description="This permanently removes the listing and its associated booking records. This action cannot be undone." confirmLabel={deleting ? 'Deleting…' : 'Delete studio'} onConfirm={confirmDelete} />
     </div>
   )
 }
