@@ -5,9 +5,17 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { motion } from 'framer-motion'
 
-export function GoogleButton({ onClick, label }: { onClick: () => void; label: string }) {
+export function GoogleButton({
+  onClick,
+  label,
+  disabled = false,
+}: {
+  onClick: () => void | Promise<void>
+  label: string
+  disabled?: boolean
+}) {
   return (
-    <button type="button" onClick={onClick} className="btn-secondary w-full !min-h-12">
+    <button type="button" onClick={onClick} disabled={disabled} className="btn-secondary w-full !min-h-12 disabled:cursor-not-allowed disabled:opacity-60">
       <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.23c0-.68-.06-1.36-.18-2.02H12v3.83h5.38a4.6 4.6 0 0 1-2 3.02v2.5h3.23c1.89-1.74 2.99-4.31 2.99-7.33Z" /><path fill="#34A853" d="M12 22c2.7 0 4.98-.9 6.63-2.43l-3.24-2.51c-.9.6-2.05.96-3.39.96-2.61 0-4.82-1.76-5.61-4.13H3.06v2.6A10 10 0 0 0 12 22Z" /><path fill="#FBBC05" d="M6.39 13.89A6 6 0 0 1 6.07 12c0-.66.11-1.3.31-1.89v-2.6H3.06A10 10 0 0 0 2 12c0 1.61.39 3.14 1.06 4.49l3.33-2.6Z" /><path fill="#EA4335" d="M12 5.98c1.47 0 2.79.5 3.82 1.5l2.87-2.87A9.62 9.62 0 0 0 12 2a10 10 0 0 0-8.94 5.51l3.33 2.6C7.18 7.74 9.39 5.98 12 5.98Z" /></svg>
       {label}
     </button>

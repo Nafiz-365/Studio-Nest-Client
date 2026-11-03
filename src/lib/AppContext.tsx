@@ -12,7 +12,6 @@ import { authClient } from "./auth-client";
 import { createSeedBookings, seedStudios } from "../data/studios";
 import type {
     ActionResult,
-    AuthUser,
     Booking,
     BookingInput,
     Studio,
@@ -25,7 +24,6 @@ import { getTokenFromClient } from "./getTokenFromClient";
 const STORAGE = {
     studios: "studionest.studios.v1",
     bookings: "studionest.bookings.v1",
-    users: "studionest.users.v1",
     session: "studionest.session.v1",
     wishlist: "studionest.wishlist.v1",
     theme: "studionest.theme.v1",
@@ -33,13 +31,6 @@ const STORAGE = {
 
 const API_BASE_URL =
     process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
-
-const demoUser: AuthUser = {
-    name: "Maya Chen",
-    email: "demo@studionest.co",
-    password: "Studio1",
-    photoURL: "",
-};
 
 function readStorage<T>(key: string, fallback: T): T {
     try {
@@ -73,7 +64,6 @@ interface AppContextValue {
     studios: Studio[];
     bookings: Booking[];
     user: User | null;
-    users: AuthUser[];
     theme: "light" | "dark";
     wishlist: string[];
     isHydrated: boolean;
@@ -86,7 +76,6 @@ interface AppContextValue {
         photoURL: string,
         password: string,
     ) => Promise<ActionResult>;
-    googleLogin: () => User;
     logout: () => void;
     addStudio: (draft: StudioDraft) => ActionResult;
     updateStudio: (id: string, draft: StudioDraft) => ActionResult;
@@ -102,7 +91,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [isHydrated, setIsHydrated] = useState(false);
     const [studios, setStudios] = useState<Studio[]>(seedStudios);
     const [bookings, setBookings] = useState<Booking[]>([]);
-    const [users, setUsers] = useState<AuthUser[]>([demoUser]);
     const [user, setUser] = useState<User | null>(null);
     const [wishlistMap, setWishlistMap] = useState<Record<string, string[]>>(
         {},
@@ -149,13 +137,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             if (savedBookings && Array.isArray(savedBookings))
                 setBookings(savedBookings);
             else setBookings(createSeedBookings());
-
-            const savedUsers = readStorage<AuthUser[] | null>(
-                STORAGE.users,
-                null,
-            );
-            if (savedUsers && Array.isArray(savedUsers) && savedUsers.length)
-                setUsers(savedUsers);
 
             const savedWishlist = readStorage<Record<string, string[]> | null>(
                 STORAGE.wishlist,
@@ -315,15 +296,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!isHydrated) return;
         try {
-            localStorage.setItem(STORAGE.users, JSON.stringify(users));
-        } catch {
-            // Ignore persistence failures.
-        }
-    }, [users, isHydrated]);
-
-    useEffect(() => {
-        if (!isHydrated) return;
-        try {
             if (user)
                 localStorage.setItem(STORAGE.session, JSON.stringify(user));
             else localStorage.removeItem(STORAGE.session);
@@ -351,7 +323,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             studios,
             bookings,
             user,
-            users,
             theme,
             wishlist,
             isHydrated,
@@ -391,23 +362,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     ok: true,
                     message: "Your StudioNest account is ready. You are now signed in.",
                 };
-            },
-            googleLogin: () => {
-                const googleUser: User = {
-                    name: "Alex Morgan",
-                    email: "alex.morgan@gmail.com",
-                    photoURL: "",
-                };
-                setUsers((current) =>
-                    current.some((item) => item.email === googleUser.email)
-                        ? current
-                        : [
-                              ...current,
-                              { ...googleUser, password: createId("google") },
-                          ],
-                );
-                setUser(googleUser);
-                return googleUser;
             },
             logout: () => {
                 void authClient.signOut();
@@ -694,12 +648,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setBookings,
             setStudios,
             setUser,
-            setUsers,
             setWishlistMap,
             studios,
             theme,
             user,
-            users,
             wishlist,
             wishlistMap,
             isHydrated,

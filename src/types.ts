@@ -57,12 +57,6 @@ export interface User {
   photoURL?: string
 }
 
-interface StoredUser extends User {
-  password: string
-}
-
-export type AuthUser = StoredUser
-
 export interface Booking {
   id: string
   studioId: string
