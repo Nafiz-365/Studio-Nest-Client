@@ -1,5 +1,5 @@
-import HowItWorks from '@/views/HowItWorks'
+import HowItWorks from "@/views/HowItWorks";
 
 export default function Page() {
-  return <HowItWorks />
+    return <HowItWorks />;
 }
