@@ -48,11 +48,11 @@ export default function StudioCard({ studio, index = 0 }: { studio: Studio; inde
           {studio.reviewsCount > 0 ? <><Star size={12} fill="currentColor" className="text-[#d29b22]" />{studio.rating.toFixed(2)}<span className="font-normal text-[#65675f]">({studio.reviewsCount})</span></> : <><Star size={12} />New space</>}
         </div>
       </div>
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex min-w-0 flex-1 flex-col p-5">
         <div className="flex items-center gap-2 text-xs text-muted"><MapPin size={13} /><span className="truncate">{studio.location}</span><span className="ml-auto flex shrink-0 items-center gap-1"><Users size={13} />{studio.capacity}</span></div>
         <h3 className="mt-3 font-display text-[22px] font-semibold leading-tight tracking-[-0.045em]"><Link href={`/studios/${studio.id}`} className="transition hover:text-[#799c22]">{studio.title}</Link></h3>
         <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted">{studio.amenities.slice(0, 3).join(' · ')}</p>
-        <div className="mt-auto flex items-end justify-between gap-3 border-t border-line pt-5">
+        <div className="mt-auto flex flex-wrap items-end justify-between gap-3 border-t border-line pt-5">
           <p><span className="font-display text-xl font-bold tracking-[-0.04em]">{formatMoney(studio.rate)}</span><span className="text-xs text-muted"> / hour</span></p>
           <Link href={`/studios/${studio.id}`} className="btn-small">View Details<ArrowUpRight size={15} /></Link>
         </div>

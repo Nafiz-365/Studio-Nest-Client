@@ -96,7 +96,7 @@ export default function HomePage({
   return (
     <>
       <div className="relative">
-      <section ref={heroRef} className="relative isolate min-h-[680px] overflow-hidden bg-[#141611] text-white sm:min-h-[calc(100svh-76px)]">
+      <section ref={heroRef} className="relative isolate min-h-[620px] overflow-hidden bg-[#141611] text-white sm:min-h-[calc(100svh-76px)]">
         <motion.div style={{ y: imageY }} className="absolute -inset-y-[10%] inset-x-0 scale-[1.03]">
           <Swiper
             modules={[Autoplay, EffectFade]}
@@ -118,29 +118,29 @@ export default function HomePage({
         <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px]" />
         <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,7,5,.96)_0%,rgba(5,7,5,.7)_48%,rgba(5,7,5,.28)_100%)]" />
         <div className="absolute inset-0 bg-[linear-gradient(0deg,rgba(5,7,5,.92)_0%,rgba(5,7,5,.18)_52%,rgba(5,7,5,.2)_100%)]" />
-        <div className="container-shell relative z-20 flex min-h-[680px] flex-col justify-center pb-48 pt-24 sm:min-h-[calc(100svh-76px)] sm:pb-28 sm:pt-16">
+        <div className="container-shell relative z-20 flex min-h-[620px] flex-col justify-center py-28 sm:min-h-[calc(100svh-76px)] sm:py-16">
           <div className="max-w-4xl rounded-[28px] bg-black/10 p-1 sm:bg-black/15 sm:p-5 sm:backdrop-blur-[1px]">
             {slides.map((slide, index) => index === activeSlide && (
               <div key={index}>
-                <p className="mb-6 flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-[#d9ff63]">
+                <p className="mb-5 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#d9ff63] sm:mb-6 sm:text-[11px] sm:tracking-[0.22em]">
                   <span className="h-px w-9 bg-[#d9ff63]" />{slide.eyebrow}
                 </p>
-                <h1 className="font-display text-[clamp(3.35rem,8vw,7.8rem)] font-semibold leading-[0.88] tracking-[-0.072em]">
+                <h1 className="font-display text-[clamp(2.8rem,13vw,7.8rem)] font-semibold leading-[0.9] tracking-[-0.072em] sm:text-[clamp(3.35rem,8vw,7.8rem)] sm:leading-[0.88]">
                   <span className="block pb-2">{slide.title}</span>
                 </h1>
-                <p className="mt-6 max-w-xl text-base leading-7 text-white/70 sm:text-lg sm:leading-8">{slide.text}</p>
+                <p className="mt-5 max-w-xl text-sm leading-6 text-white/70 sm:mt-6 sm:text-lg sm:leading-8">{slide.text}</p>
               </div>
             ))}
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Link href="/studios" className="btn-primary !min-h-14 !px-7">Explore Studios<ArrowUpRight size={19} /></Link>
-              <Link href="/add-studio" className="btn-light !min-h-14 !px-7">Host Your Space<ArrowRight size={18} /></Link>
+            <div className="mt-7 flex flex-col gap-3 sm:mt-9 md:flex-row">
+              <Link href="/studios" className="btn-primary w-full !min-h-13 !px-5 md:w-auto md:!min-h-14 md:!px-7">Explore Studios<ArrowUpRight size={19} /></Link>
+              <Link href="/add-studio" className="btn-light w-full !min-h-13 !px-5 md:w-auto md:!min-h-14 md:!px-7">Host Your Space<ArrowRight size={18} /></Link>
             </div>
           </div>
-          <div className="absolute left-auto right-5 top-6 z-40 flex items-end gap-3 sm:right-8 lg:right-10">
+          <div className="absolute bottom-5 right-4 z-40 flex max-w-[calc(100%-2rem)] items-center gap-2 rounded-full border border-white/10 bg-black/20 px-2 py-1.5 shadow-lg shadow-black/10 backdrop-blur-md transition-[background-color,border-color,transform] duration-500 ease-out sm:bottom-6 sm:right-8 sm:gap-3 sm:px-2.5 sm:py-2 lg:right-10">
             <div className="hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45 md:flex"><ArrowDown size={15} className="animate-bounce" />Scroll to discover</div>
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <span className="font-display text-sm text-white/75">0{activeSlide + 1}<span className="mx-2 text-white/30">/</span><span className="text-white/35">03</span></span>
-              <div className="flex w-28 gap-2 md:w-48" role="tablist" aria-label="Hero slides">
+              <div className="flex w-20 gap-1.5 sm:w-28 sm:gap-2 md:w-48" role="tablist" aria-label="Hero slides">
                 {slides.map((slide, index) => (
                   <button
                     key={slide.image}
@@ -163,23 +163,33 @@ export default function HomePage({
             <button type="button" onClick={() => setIsHeroPaused((paused) => !paused)} className="icon-button !h-9 !w-9 !border-white/20 !bg-white/10 !text-white hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915]" aria-label={isHeroPaused ? 'Play hero slideshow' : 'Pause hero slideshow'}>
               {isHeroPaused ? <Play size={14} fill="currentColor" /> : <Pause size={14} />}
             </button>
+            <div className="flex items-center gap-1 sm:hidden">
+              <Button type="button" variant="outline" size="icon" onClick={showPreviousSlide} className="!size-9 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915]" aria-label="Previous hero slide">
+                <ArrowLeft size={14} />
+              </Button>
+              <Button type="button" variant="outline" size="icon" onClick={showNextSlide} className="!size-9 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915]" aria-label="Next hero slide">
+                <ArrowRight size={14} />
+              </Button>
+            </div>
             <p className="hidden max-w-[180px] text-right text-[10px] uppercase tracking-[0.15em] text-white/45 lg:block">{slides[activeSlide].tag}</p>
           </div>
-          <div className="pointer-events-none absolute inset-y-0 left-3 right-3 z-40 flex items-center justify-between sm:left-6 sm:right-6 lg:left-8 lg:right-8">
-            <Button type="button" variant="outline" size="icon" onClick={showPreviousSlide} className="pointer-events-auto !size-10 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Previous hero slide">
-              <ArrowLeft size={16} />
+          <div className="pointer-events-none absolute inset-y-0 left-2 right-2 z-40 hidden items-center justify-between sm:flex sm:left-6 sm:right-6 lg:left-8 lg:right-8">
+            <Button type="button" variant="outline" size="icon" onClick={showPreviousSlide} className="pointer-events-auto !size-9 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Previous hero slide">
+              <ArrowLeft size={14} className="sm:hidden" />
+              <ArrowLeft size={16} className="hidden sm:block" />
             </Button>
-            <Button type="button" variant="outline" size="icon" onClick={showNextSlide} className="pointer-events-auto !size-10 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Next hero slide">
-              <ArrowRight size={16} />
+            <Button type="button" variant="outline" size="icon" onClick={showNextSlide} className="pointer-events-auto !size-9 !rounded-full !border-white/20 !bg-black/20 !text-white backdrop-blur-md hover:!border-[#d9ff63] hover:!bg-[#d9ff63] hover:!text-[#171915] sm:!size-11" aria-label="Next hero slide">
+              <ArrowRight size={14} className="sm:hidden" />
+              <ArrowRight size={16} className="hidden sm:block" />
             </Button>
           </div>
         </div>
       </section>
 
-      <section className="absolute inset-x-0 bottom-0 z-30 border-b border-line bg-surface/95 backdrop-blur-md">
-        <div className="container-shell grid grid-cols-2 divide-x divide-line py-2 sm:grid-cols-4">
+      <section className="relative z-30 border-b border-line bg-surface/95 backdrop-blur-md">
+        <div className="container-shell grid grid-cols-2 divide-x divide-line py-1 sm:grid-cols-4 sm:py-2">
           {[[String(studios.length), 'independent spaces'], [`${averageRating}/5`, 'average guest rating'], [String(categories.length), 'creative disciplines'], ['24/7', 'real human support']].map(([number, label]) => (
-            <div key={label} className="px-4 py-7 text-center sm:px-8"><p className="font-display text-2xl font-semibold tracking-[-0.05em] sm:text-3xl">{number}</p><p className="mt-1 text-[10px] font-medium uppercase tracking-[0.14em] text-muted sm:text-xs">{label}</p></div>
+            <div key={label} className="px-2 py-4 text-center sm:px-8 sm:py-7"><p className="font-display text-xl font-semibold tracking-[-0.05em] sm:text-3xl">{number}</p><p className="mt-1 text-[9px] font-medium uppercase leading-3 tracking-[0.1em] text-muted sm:text-xs sm:leading-normal sm:tracking-[0.14em]">{label}</p></div>
           ))}
         </div>
       </section>

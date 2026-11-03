@@ -53,7 +53,7 @@ export default function BookingModal({ studio, open, onClose }: { studio: Studio
 
   return (
     <Modal open={open} onClose={onClose} title="Reserve your session" description={`${studio.title} · ${studio.location}`} wide>
-      <form onSubmit={submit} className="grid gap-7 md:grid-cols-[1fr_250px]">
+      <form onSubmit={submit} className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_250px]">
         <div className="space-y-5">
           <div>
             <label htmlFor="booking-date" className="field-label">Session date</label>

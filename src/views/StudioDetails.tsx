@@ -102,9 +102,9 @@ export default function StudioDetails({
             </div>
             <div className="studio-pagination absolute bottom-7 right-6 z-20 !w-auto" />
           </motion.div>
-          <div className="grid grid-cols-3 gap-3 lg:grid-cols-1 lg:grid-rows-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-1 lg:grid-rows-3">
             {studio.images.map((image, index) => (
-              <button type="button" key={`${image}-thumb`} onClick={() => gallery?.slideTo(index)} className={cn('relative min-h-24 overflow-hidden rounded-[18px] border-2 bg-soft transition', activeImage === index ? 'border-[#a5ce43]' : 'border-transparent opacity-70 hover:opacity-100')} aria-label={`Show studio image ${index + 1}`}>
+              <button type="button" key={`${image}-thumb`} onClick={() => gallery?.slideTo(index)} className={cn('relative min-h-20 overflow-hidden rounded-[18px] border-2 bg-soft transition sm:min-h-24', activeImage === index ? 'border-[#a5ce43]' : 'border-transparent opacity-70 hover:opacity-100')} aria-label={`Show studio image ${index + 1}`}>
                 <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 {index === studio.images.length - 1 && <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[9px] text-white backdrop-blur-sm"><Expand size={10} />{studio.images.length} views</span>}
               </button>
@@ -121,7 +121,7 @@ export default function StudioDetails({
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted"><span className="flex items-center gap-1.5"><MapPin size={16} />{studio.location}</span>{studio.reviewsCount > 0 ? <span className="flex items-center gap-1.5 font-semibold text-text"><Star size={15} fill="currentColor" className="text-[#d29b22]" />{studio.rating.toFixed(2)} <span className="font-normal text-muted">({studio.reviewsCount} reviews)</span></span> : <span>New to StudioNest</span>}<span className="flex items-center gap-1.5"><Maximize2 size={15} />{studio.size.toLocaleString()} sq ft</span></div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 border-b border-line py-7">
+          <div className="grid grid-cols-1 gap-3 border-b border-line py-7 sm:grid-cols-3">
             {[[Users, 'Capacity', `${studio.capacity} people`], [Maximize2, 'Floor area', `${studio.size.toLocaleString()} sq ft`], [Clock3, 'Minimum hire', '1 hour']].map(([Icon, label, value]) => {
               const SpecIcon = Icon as typeof Users
               return <div key={label as string} className="rounded-2xl bg-surface p-4 sm:p-5"><SpecIcon size={19} className="text-[#83a62d]" strokeWidth={1.6} /><p className="mt-4 text-[10px] uppercase tracking-[0.12em] text-muted">{label as string}</p><p className="mt-1 font-display text-sm font-semibold sm:text-base">{value as string}</p></div>

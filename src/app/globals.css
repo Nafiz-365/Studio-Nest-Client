@@ -140,6 +140,23 @@
     text-rendering: optimizeLegibility;
   }
 
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  h1,
+  h2,
+  h3,
+  p,
+  a,
+  button,
+  label {
+    overflow-wrap: anywhere;
+  }
+
   html {
     @apply font-sans scroll-smooth;
   }
@@ -258,6 +275,32 @@
 
   .spinner {
     @apply inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+}
+
+@media (max-width: 639px) {
+  .container-shell {
+    @apply px-4;
+  }
+
+  .section-space {
+    @apply py-12;
+  }
+
+  .page-title {
+    @apply text-[clamp(2.5rem,13vw,4rem)];
+  }
+
+  .form-section {
+    @apply rounded-[22px] p-4;
+  }
+
+  .form-section-heading {
+    @apply gap-3;
+  }
+
+  .form-section-heading h2 {
+    @apply text-lg;
   }
 }
 

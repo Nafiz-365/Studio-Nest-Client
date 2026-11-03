@@ -39,7 +39,7 @@ export default function MyListings() {
         <div><p className="eyebrow">Host workspace</p><h1 className="page-title mt-4">My studio listings.</h1><p className="mt-4 max-w-xl text-sm leading-6 text-muted">Manage your spaces, keep production details current, and see how each room is performing.</p></div>
         <Link href="/add-studio" className="btn-primary shrink-0"><Plus size={17} />Add New Studio</Link>
       </div>
-      {listings.length > 0 && <div className="mt-10 grid grid-cols-3 gap-3 sm:gap-5">
+      {listings.length > 0 && <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
         {[{ label: 'Live spaces', value: listings.length }, { label: 'Total reviews', value: listings.reduce((sum, studio) => sum + studio.reviewsCount, 0) }, { label: 'Booking requests', value: bookings.filter((booking) => listings.some((studio) => studio.id === booking.studioId)).length }].map((stat) => <div key={stat.label} className="rounded-[20px] border border-line bg-surface p-4 sm:p-6"><p className="font-display text-2xl font-semibold tracking-[-0.05em] sm:text-4xl">{stat.value}</p><p className="mt-1 text-[10px] uppercase tracking-[0.12em] text-muted sm:text-xs">{stat.label}</p></div>)}
       </div>}
       <div className="mt-10">
@@ -54,7 +54,7 @@ export default function MyListings() {
                 <p className="mt-3 line-clamp-2 max-w-xl text-sm leading-6 text-muted">{studio.overview}</p>
                 <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-xs"><span><strong className="font-display text-lg">{formatMoney(studio.rate)}</strong> <span className="text-muted">/ hour</span></span><span className="text-muted">{listingBookings.length} {listingBookings.length === 1 ? 'booking' : 'bookings'}</span><span className="text-muted">Capacity {studio.capacity}</span></div>
               </div>
-              <div className="flex gap-2 border-t border-line p-5 md:w-36 md:flex-col md:justify-center md:border-l md:border-t-0">
+              <div className="flex flex-wrap gap-2 border-t border-line p-5 md:w-36 md:flex-col md:justify-center md:border-l md:border-t-0">
                 <Link href={`/studios/${studio.id}`} className="btn-secondary flex-1 !min-h-10 !px-3 text-xs md:flex-none"><Eye size={15} />View</Link>
                 <Link href={`/studios/edit/${studio.id}`} className="btn-secondary flex-1 !min-h-10 !px-3 text-xs md:flex-none"><Edit3 size={15} />Update</Link>
                 <button type="button" onClick={() => setDeleteTarget(studio)} className="btn-danger-subtle flex-1 !min-h-10 !px-3 text-xs md:flex-none"><Trash2 size={15} />Delete</button>
