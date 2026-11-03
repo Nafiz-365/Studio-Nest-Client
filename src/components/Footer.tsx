@@ -100,16 +100,16 @@ export default function Footer() {
 
     return (
         <footer className="border-t border-white/10 bg-[#171915] text-[#f4f2e9]">
-            <div className="container-shell py-16 sm:py-20">
-                <div className="grid gap-12 lg:grid-cols-[1.25fr_.75fr_.75fr_1.25fr] lg:gap-10">
-                    <div>
+            <div className="container-shell py-12 sm:py-20">
+                <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:gap-12 lg:grid-cols-[1.25fr_.75fr_.75fr_1.25fr] lg:gap-10">
+                    <div className="col-span-2 lg:col-span-1">
                         <Logo light />
-                        <p className="mt-5 max-w-xs text-sm leading-7 text-white/55">
+                        <p className="mt-4 max-w-xs text-sm leading-6 text-white/55 sm:mt-5 sm:leading-7">
                             Making remarkable creative space easier to find,
                             book, and share. Built for the people behind the
                             work.
                         </p>
-                        <div className="mt-7 flex items-center gap-2">
+                        <div className="mt-5 flex items-center gap-2 sm:mt-7">
                             {[
                                 {
                                     label: "X",
@@ -138,7 +138,7 @@ export default function Footer() {
                                     target="_blank"
                                     rel="noreferrer"
                                     aria-label={social.label}
-                                    className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 text-white/65 transition hover:border-[#d9ff63] hover:bg-[#d9ff63] hover:text-[#171915]"
+                                    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 text-white/65 transition hover:border-[#d9ff63] hover:bg-[#d9ff63] hover:text-[#171915] sm:h-10 sm:w-10"
                                 >
                                     {social.icon}
                                 </a>
@@ -149,7 +149,7 @@ export default function Footer() {
                         <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
                             Navigate
                         </h3>
-                        <div className="mt-5 flex flex-col items-start gap-3.5 text-sm">
+                        <div className="mt-4 flex flex-col items-start gap-2.5 text-sm sm:mt-5 sm:gap-3.5">
                             {[
                                 ["Explore studios", "/studios"],
                                 ["How it works", "/how-it-works"],
@@ -171,7 +171,7 @@ export default function Footer() {
                         <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-white/40">
                             Popular spaces
                         </h3>
-                        <div className="mt-5 flex flex-col items-start gap-3.5 text-sm">
+                        <div className="mt-4 flex flex-col items-start gap-2.5 text-sm sm:mt-5 sm:gap-3.5">
                             {categories.map((category) => (
                                 <Link
                                     key={category.name}
@@ -183,17 +183,17 @@ export default function Footer() {
                             ))}
                         </div>
                     </div>
-                    <div>
+                    <div className="col-span-2 lg:col-span-1">
                         <h3 className="font-display text-xl font-semibold tracking-[-0.035em]">
                             Field notes for better production days.
                         </h3>
-                        <p className="mt-3 text-sm leading-6 text-white/50">
+                        <p className="mt-2 text-sm leading-6 text-white/50 sm:mt-3">
                             New spaces, practical host guides, and studio craft.
                             Twice a month.
                         </p>
                         <form
                             onSubmit={subscribe}
-                            className="mt-6 flex rounded-full border border-white/15 bg-white/5 p-1.5 focus-within:border-[#d9ff63]/60"
+                            className="mt-4 flex rounded-full border border-white/15 bg-white/5 p-1.5 focus-within:border-[#d9ff63]/60 sm:mt-6"
                         >
                             <label
                                 htmlFor="newsletter-email"
@@ -223,7 +223,7 @@ export default function Footer() {
                         </form>
                     </div>
                 </div>
-                <div className="mt-16 flex flex-col gap-4 border-t border-white/10 pt-7 text-xs text-white/40 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <div className="mt-10 flex flex-col gap-3 border-t border-white/10 pt-5 text-xs text-white/40 sm:mt-16 sm:gap-4 sm:pt-7 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <p>
                         © {COPYRIGHT_YEAR} StudioNest. Creative space,
                         thoughtfully shared.

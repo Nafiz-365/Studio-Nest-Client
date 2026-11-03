@@ -131,7 +131,7 @@ export default function HowItWorks() {
                             clipPath: "inset(0 0 0 0% round 28px)",
                         }}
                         transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-                        className="relative"
+                        className="relative min-w-0"
                     >
                         <Image
                             height={5000}
@@ -140,7 +140,7 @@ export default function HowItWorks() {
                             alt="Creative workshop prepared for a group session"
                             className="aspect-4/3 w-full rounded-[28px] object-cover"
                         />
-                        <div className="absolute -bottom-5 -left-3 max-w-62 rounded-[20px] border border-line bg-bg p-5 shadow-xl sm:-left-6">
+                        <div className="relative mt-4 w-full max-w-full rounded-[20px] border border-line bg-bg p-4 shadow-xl lg:w-auto lg:max-w-62 lg:p-5">
                             <Sparkles size={20} className="text-[#7c9e2b]" />
                             <p className="mt-3 font-display text-lg font-semibold leading-tight">
                                 One clear process, from discovery to wrap.
