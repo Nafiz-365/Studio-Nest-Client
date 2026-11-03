@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import SectionHeading from "../components/SectionHeading";
+import Image from "next/image";
 
 export default function About() {
     return (
@@ -67,12 +68,12 @@ export default function About() {
                     transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
                     className="relative"
                 >
-                    <img
+                    <Image
                         src="/images/studio-cinema.jpg"
                         alt="Independent filmmakers collaborating on set"
-                        className="aspect-[16/8] min-h-[340px] w-full rounded-[30px] object-cover"
+                        className="aspect-16/8 min-h-85 w-full rounded-[30px] object-cover"
                     />
-                    <div className="absolute inset-0 rounded-[30px] bg-gradient-to-t from-black/65 via-transparent to-transparent" />
+                    <div className="absolute inset-0 rounded-[30px] bg-linear-to-t from-black/65 via-transparent to-transparent" />
                     <p className="absolute bottom-7 left-7 max-w-md font-display text-2xl font-medium leading-tight tracking-[-0.04em] text-white sm:bottom-10 sm:left-10 sm:text-4xl">
                         Built for the people behind the work.
                     </p>
@@ -139,13 +140,13 @@ export default function About() {
             <section className="section-space">
                 <div className="container-shell grid items-center gap-12 lg:grid-cols-[.85fr_1fr] lg:gap-20">
                     <div className="relative">
-                        <img
+                        <Image
                             src="/images/studio-art.jpg"
                             alt="A bright independent artist studio"
-                            className="aspect-[4/5] w-full rounded-[28px] object-cover"
+                            className="aspect-4/5 w-full rounded-[28px] object-cover"
                         />
                         <div className="absolute bottom-5 right-5 rounded-2xl bg-[#d9ff63] p-5 text-[#171915]">
-                            <p className="font-display text-3xl font-bold tracking-[-0.05em]">
+                            <p className="font-display text-3xl font-bold tracking-tighter">
                                 5 disciplines
                             </p>
                             <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.12em]">
@@ -191,7 +192,7 @@ export default function About() {
                         size={32}
                         strokeWidth={1.4}
                     />
-                    <h2 className="mx-auto mt-6 max-w-3xl font-display text-[clamp(2.4rem,5vw,4.5rem)] font-semibold leading-[1] tracking-[-0.055em]">
+                    <h2 className="mx-auto mt-6 max-w-3xl font-display text-[clamp(2.4rem,5vw,4.5rem)] font-semibold leading-none tracking-[-0.055em]">
                         Come for the room.
                         <br />
                         Stay for what you make in it.
