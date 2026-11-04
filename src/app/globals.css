@@ -185,6 +185,10 @@
         @apply font-heading text-[clamp(2.6rem,6vw,5.5rem)] font-semibold leading-[0.95] tracking-[-0.06em];
     }
 
+    .section-title {
+        @apply font-display text-[clamp(2.35rem,4.5vw,4.5rem)] font-semibold leading-[1.02] tracking-[-0.058em] text-balance;
+    }
+
     .eyebrow {
         @apply text-[10px] font-semibold uppercase tracking-[0.18em] text-[#719122];
     }
