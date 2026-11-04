@@ -32,6 +32,12 @@ export default function Register() {
     });
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({
+        name: "",
+        email: "",
+        photoURL: "",
+        password: "",
+    });
     const [submitting, setSubmitting] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState(false);
     const checks = useMemo(
@@ -54,38 +60,49 @@ export default function Register() {
     const update = (field: keyof typeof form, value: string) =>
         setForm((current) => ({ ...current, [field]: value }));
 
-    const submit = (event: FormEvent) => {
+    const submit = async (event: FormEvent) => {
         event.preventDefault();
         setError("");
-        if (!form.name.trim() || !/^\S+@\S+\.\S+$/.test(form.email)) {
-            setError("Add your name and a valid email address.");
-            toast.error("Check your name and email before continuing.");
-            return;
-        }
-        if (checks.some((check) => !check.valid)) {
-            setError(
-                "Your password does not meet all three security requirements below.",
-            );
-            toast.error("Choose a stronger password before registering.");
+        const nextFieldErrors = {
+            name:
+                form.name.trim().length < 2
+                    ? "Enter your name (at least 2 characters)."
+                    : "",
+            email: !/^\S+@\S+\.\S+$/.test(form.email.trim())
+                ? "Enter a valid email address."
+                : "",
+            photoURL:
+                form.photoURL && !/^https?:\/\/\S+$/i.test(form.photoURL.trim())
+                    ? "Use a valid image URL, or leave this optional field blank."
+                    : "",
+            password: checks.some((check) => !check.valid)
+                ? "Use all three password requirements below."
+                : "",
+        };
+        setFieldErrors(nextFieldErrors);
+        if (Object.values(nextFieldErrors).some(Boolean)) {
+            setError("Please check the highlighted fields before continuing.");
+            toast.error("Please check the highlighted fields.");
             return;
         }
         setSubmitting(true);
-        window.setTimeout(async () => {
+        try {
             const result = await register(
-                form.name,
-                form.email,
-                form.photoURL,
+                form.name.trim(),
+                form.email.trim(),
+                form.photoURL.trim(),
                 form.password,
             );
-            setSubmitting(false);
             if (!result.ok) {
                 setError(result.message);
                 toast.error(result.message);
                 return;
             }
             toast.success(result.message);
-            router.push(`/login?email=${encodeURIComponent(form.email)}`);
-        }, 500);
+            router.replace("/");
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const continueWithGoogle = async () => {
@@ -127,24 +144,47 @@ export default function Register() {
                     </div>
                 )}
                 <div>
-                    <Label htmlFor="register-name">Full name</Label>
+                    <Label htmlFor="register-name" className="mb-2!">
+                        Full name
+                    </Label>
                     <div className="relative">
                         <UserRound size={17} className="field-icon" />
                         <Input
                             id="register-name"
                             autoComplete="name"
                             value={form.name}
-                            onChange={(event) =>
-                                update("name", event.target.value)
-                            }
-                            className="pl-11!"
+                            onChange={(event) => {
+                                update("name", event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    name: "",
+                                }));
+                                setError("");
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11!"
                             placeholder="Your name"
                             required
+                            aria-invalid={Boolean(fieldErrors.name)}
+                            aria-describedby={
+                                fieldErrors.name
+                                    ? "register-name-error"
+                                    : undefined
+                            }
                         />
                     </div>
+                    {fieldErrors.name && (
+                        <p
+                            id="register-name-error"
+                            className="mt-1.5 text-xs text-red-500"
+                        >
+                            {fieldErrors.name}
+                        </p>
+                    )}
                 </div>
                 <div>
-                    <Label htmlFor="register-email">Email address</Label>
+                    <Label htmlFor="register-email" className="mb-2!">
+                        Email address
+                    </Label>
                     <div className="relative">
                         <Mail size={17} className="field-icon" />
                         <Input
@@ -152,18 +192,37 @@ export default function Register() {
                             type="email"
                             autoComplete="email"
                             value={form.email}
-                            onChange={(event) =>
-                                update("email", event.target.value)
-                            }
-                            className="pl-11!"
+                            onChange={(event) => {
+                                update("email", event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    email: "",
+                                }));
+                                setError("");
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11!"
                             placeholder="you@studio.com"
                             required
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={
+                                fieldErrors.email
+                                    ? "register-email-error"
+                                    : undefined
+                            }
                             suppressHydrationWarning
                         />
                     </div>
+                    {fieldErrors.email && (
+                        <p
+                            id="register-email-error"
+                            className="mt-1.5 text-xs text-red-500"
+                        >
+                            {fieldErrors.email}
+                        </p>
+                    )}
                 </div>
                 <div>
-                    <Label htmlFor="register-photo">
+                    <Label htmlFor="register-photo" className="mb-2!">
                         Photo URL{" "}
                         <span className="font-normal text-muted">
                             (optional)
@@ -179,16 +238,36 @@ export default function Register() {
                             id="register-photo"
                             type="url"
                             value={form.photoURL}
-                            onChange={(event) =>
-                                update("photoURL", event.target.value)
-                            }
-                            className="pl-11!"
+                            onChange={(event) => {
+                                update("photoURL", event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    photoURL: "",
+                                }));
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11!"
                             placeholder="https://example.com/portrait.jpg"
+                            aria-invalid={Boolean(fieldErrors.photoURL)}
+                            aria-describedby={
+                                fieldErrors.photoURL
+                                    ? "register-photo-error"
+                                    : undefined
+                            }
                         />
                     </div>
+                    {fieldErrors.photoURL && (
+                        <p
+                            id="register-photo-error"
+                            className="mt-1.5 text-xs text-red-500"
+                        >
+                            {fieldErrors.photoURL}
+                        </p>
+                    )}
                 </div>
                 <div>
-                    <Label htmlFor="register-password">Password</Label>
+                    <Label htmlFor="register-password" className="mb-2!">
+                        Password
+                    </Label>
                     <div className="relative">
                         <LockKeyhole size={17} className="field-icon" />
                         <Input
@@ -196,18 +275,29 @@ export default function Register() {
                             type={showPassword ? "text" : "password"}
                             autoComplete="new-password"
                             value={form.password}
-                            onChange={(event) =>
-                                update("password", event.target.value)
-                            }
-                            className="pl-11! pr-12!"
+                            onChange={(event) => {
+                                update("password", event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    password: "",
+                                }));
+                                setError("");
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11! pr-12!"
                             placeholder="Create a secure password"
                             required
+                            aria-invalid={Boolean(fieldErrors.password)}
+                            aria-describedby={
+                                fieldErrors.password
+                                    ? "register-password-error"
+                                    : undefined
+                            }
                             suppressHydrationWarning
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword((show) => !show)}
-                            className="absolute right-4 top-3.5 text-muted transition hover:text-text"
+                            className="absolute inset-y-0 right-3 flex w-10 items-center justify-center rounded-full text-muted transition hover:bg-bg hover:text-text"
                             aria-label={
                                 showPassword ? "Hide password" : "Show password"
                             }
@@ -238,9 +328,18 @@ export default function Register() {
                         </div>
                     ))}
                 </div>
+                {fieldErrors.password && (
+                    <p
+                        id="register-password-error"
+                        className="-mt-1 text-xs text-red-500"
+                    >
+                        {fieldErrors.password}
+                    </p>
+                )}
                 <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || socialSubmitting}
+                    aria-busy={submitting}
                     className="btn-primary min-h-12! w-full disabled:opacity-60"
                 >
                     {submitting ? (

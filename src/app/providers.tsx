@@ -2,18 +2,21 @@
 
 import { Suspense, type ReactNode } from "react";
 import { Toaster } from "sonner";
+import { usePathname } from "next/navigation";
 import Footer from "@/components/Footer";
 import Header from "@/components/Header";
 import { AppProvider, useApp } from "@/lib/AppContext";
 
 function AppShell({ children }: { children: ReactNode }) {
     const { theme, isHydrated } = useApp();
+    const pathname = usePathname() || "/";
+    const isAuthPage = pathname === "/login" || pathname === "/register";
     const renderedTheme = isHydrated ? theme : "light";
     return (
-        <div className="min-h-screen bg-bg text-text">
-            <Header />
-            <main>{children}</main>
-            <Footer />
+        <div className="flex min-h-screen flex-col bg-bg text-text">
+            {!isAuthPage && <Header />}
+            <main className="flex-1">{children}</main>
+            {!isAuthPage && <Footer />}
             <Toaster
                 position="top-right"
                 theme={renderedTheme}

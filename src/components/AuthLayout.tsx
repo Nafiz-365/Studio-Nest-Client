@@ -53,7 +53,7 @@ export default function AuthLayout({
     mode: "login" | "register";
 }) {
     return (
-        <div className="container-shell grid min-h-[calc(100svh-76px)] items-stretch gap-0 py-6 sm:py-10 lg:grid-cols-[.9fr_1.1fr] lg:py-12">
+        <div className="container-shell grid min-h-svh min-w-0 items-start gap-0 py-4 sm:py-8 lg:items-stretch lg:grid-cols-[.9fr_1.1fr] lg:py-12">
             <motion.div
                 initial={{ opacity: 0, x: -25 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -105,12 +105,12 @@ export default function AuthLayout({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.65, delay: 0.1 }}
-                className="flex items-center justify-center rounded-[30px] border border-line bg-surface px-5 py-10 sm:px-12 lg:ml-5 lg:px-14 xl:px-20"
+                className="flex w-full items-center justify-center rounded-[24px] border border-line bg-surface px-4 py-7 sm:rounded-[30px] sm:px-10 sm:py-10 lg:ml-5 lg:px-14 lg:py-12 xl:px-20"
             >
-                <div className="w-full max-w-md">
+                <div className="min-w-0 w-full max-w-md">
                     <Link
                         href="/"
-                        className="mb-10 inline-flex items-center gap-2 text-xs font-semibold text-muted transition hover:text-text"
+                        className="mb-7 inline-flex items-center gap-2 text-xs font-semibold text-muted transition hover:text-text sm:mb-10"
                     >
                         <ArrowLeft size={15} />
                         Back to StudioNest

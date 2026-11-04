@@ -22,20 +22,31 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
+    const [fieldErrors, setFieldErrors] = useState({
+        email: "",
+        password: "",
+    });
     const [submitting, setSubmitting] = useState(false);
     const [socialSubmitting, setSocialSubmitting] = useState(false);
 
-    const submit = (event: FormEvent) => {
+    const submit = async (event: FormEvent) => {
         event.preventDefault();
         setError("");
-        if (!email || !password) {
-            setError("Enter both your email and password to continue.");
+        const nextFieldErrors = {
+            email: !email.trim()
+                ? "Enter your email address."
+                : !/^\S+@\S+\.\S+$/.test(email.trim())
+                  ? "Enter a valid email address."
+                  : "",
+            password: !password ? "Enter your password." : "",
+        };
+        setFieldErrors(nextFieldErrors);
+        if (nextFieldErrors.email || nextFieldErrors.password) {
             return;
         }
         setSubmitting(true);
-        window.setTimeout(async () => {
-            const result = await login(email, password);
-            setSubmitting(false);
+        try {
+            const result = await login(email.trim(), password);
             if (!result.ok) {
                 setError(result.message);
                 toast.error(result.message);
@@ -43,7 +54,9 @@ export default function Login() {
             }
             toast.success(result.message);
             router.replace(destination);
-        }, 450);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const continueWithGoogle = async () => {
@@ -85,7 +98,9 @@ export default function Login() {
                     </div>
                 )}
                 <div>
-                    <Label htmlFor="login-email">Email address</Label>
+                    <Label htmlFor="login-email" className="mb-2!">
+                        Email address
+                    </Label>
                     <div className="relative">
                         <Mail size={17} className="field-icon" />
                         <Input
@@ -93,16 +108,39 @@ export default function Login() {
                             type="email"
                             autoComplete="email"
                             value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            className="pl-11!"
+                            onChange={(event) => {
+                                setEmail(event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    email: "",
+                                }));
+                                setError("");
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11!"
                             placeholder="you@studio.com"
                             required
+                            aria-invalid={Boolean(fieldErrors.email)}
+                            aria-describedby={
+                                fieldErrors.email
+                                    ? "login-email-error"
+                                    : undefined
+                            }
                             suppressHydrationWarning
                         />
                     </div>
+                    {fieldErrors.email && (
+                        <p
+                            id="login-email-error"
+                            className="mt-1.5 text-xs text-red-500"
+                        >
+                            {fieldErrors.email}
+                        </p>
+                    )}
                 </div>
                 <div>
-                    <Label htmlFor="login-password">Password</Label>
+                    <Label htmlFor="login-password" className="mb-2!">
+                        Password
+                    </Label>
                     <div className="relative">
                         <LockKeyhole size={17} className="field-icon" />
                         <Input
@@ -110,18 +148,29 @@ export default function Login() {
                             type={showPassword ? "text" : "password"}
                             autoComplete="current-password"
                             value={password}
-                            onChange={(event) =>
-                                setPassword(event.target.value)
-                            }
-                            className="pl-11! pr-12!"
+                            onChange={(event) => {
+                                setPassword(event.target.value);
+                                setFieldErrors((current) => ({
+                                    ...current,
+                                    password: "",
+                                }));
+                                setError("");
+                            }}
+                            className="h-12! min-h-11! rounded-2xl! pl-11! pr-12!"
                             placeholder="Your password"
                             required
+                            aria-invalid={Boolean(fieldErrors.password)}
+                            aria-describedby={
+                                fieldErrors.password
+                                    ? "login-password-error"
+                                    : undefined
+                            }
                             suppressHydrationWarning
                         />
                         <button
                             type="button"
                             onClick={() => setShowPassword((show) => !show)}
-                            className="absolute right-4 top-3.5 text-muted transition hover:text-text"
+                            className="absolute inset-y-0 right-3 flex w-10 items-center justify-center rounded-full text-muted transition hover:bg-bg hover:text-text"
                             aria-label={
                                 showPassword ? "Hide password" : "Show password"
                             }
@@ -133,10 +182,19 @@ export default function Login() {
                             )}
                         </button>
                     </div>
+                    {fieldErrors.password && (
+                        <p
+                            id="login-password-error"
+                            className="mt-1.5 text-xs text-red-500"
+                        >
+                            {fieldErrors.password}
+                        </p>
+                    )}
                 </div>
                 <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || socialSubmitting}
+                    aria-busy={submitting}
                     className="btn-primary min-h-12! w-full disabled:opacity-60"
                 >
                     {submitting ? (
