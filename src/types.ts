@@ -5,7 +5,12 @@ export type Category =
     | "Music Suite"
     | "Workshop";
 
-export type BookingStatus = "Pending" | "Confirmed" | "Completed" | "Cancelled";
+export type BookingStatus =
+    | "Pending"
+    | "Confirmed"
+    | "Completed"
+    | "Cancelled"
+    | "Declined";
 
 export interface Review {
     id: string;
@@ -65,6 +70,7 @@ export interface User {
 export interface Booking {
     id: string;
     studioId: string;
+    studioTitle?: string;
     userEmail: string;
     userName: string;
     date: string;

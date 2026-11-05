@@ -22,7 +22,7 @@ import { formatMoney } from "../lib/utils";
 import Image from "next/image";
 
 export default function MyListings() {
-    const { studios, user, deleteStudio, bookings } = useApp();
+    const { studios, user, deleteStudio, hostBookings } = useApp();
     const [deleteTarget, setDeleteTarget] = useState<Studio | null>(null);
     const [deleting, setDeleting] = useState(false);
     const listings = studios.filter(
@@ -56,10 +56,18 @@ export default function MyListings() {
                         see how each room is performing.
                     </p>
                 </div>
-                <Link href="/add-studio" className="btn-primary shrink-0">
-                    <Plus size={17} />
-                    Add New Studio
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                    <Link
+                        href="/host-bookings"
+                        className="btn-secondary shrink-0"
+                    >
+                        Review booking requests
+                    </Link>
+                    <Link href="/add-studio" className="btn-primary shrink-0">
+                        <Plus size={17} />
+                        Add New Studio
+                    </Link>
+                </div>
             </div>
             {listings.length > 0 && (
                 <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-5">
@@ -74,11 +82,7 @@ export default function MyListings() {
                         },
                         {
                             label: "Booking requests",
-                            value: bookings.filter((booking) =>
-                                listings.some(
-                                    (studio) => studio.id === booking.studioId,
-                                ),
-                            ).length,
+                            value: hostBookings.length,
                         },
                     ].map((stat) => (
                         <div
@@ -99,7 +103,7 @@ export default function MyListings() {
                 {listings.length ? (
                     <div className="space-y-4">
                         {listings.map((studio, index) => {
-                            const listingBookings = bookings.filter(
+                            const listingBookings = hostBookings.filter(
                                 (booking) => booking.studioId === studio.id,
                             );
                             return (
@@ -120,6 +124,7 @@ export default function MyListings() {
                                             src={studio.images[0]}
                                             alt={studio.title}
                                             className="absolute inset-0 h-full w-full object-cover transition duration-500 hover:scale-105"
+                                            unoptimized
                                         />
                                         <span className="absolute left-4 top-4 rounded-full bg-[#171915]/75 px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-md">
                                             {studio.category}

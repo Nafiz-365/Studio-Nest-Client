@@ -5,8 +5,8 @@ import {
     ArrowUpRight,
     Bookmark,
     Building2,
+    CalendarClock,
     CalendarDays,
-    CheckCircle2,
     Clock3,
     Heart,
     Plus,
@@ -22,7 +22,7 @@ import { formatDate, formatMoney, formatTime, toDateInput } from "../lib/utils";
 import Image from "next/image";
 
 export default function Dashboard() {
-    const { user, studios, bookings, wishlist } = useApp();
+    const { user, studios, bookings, hostBookings, wishlist } = useApp();
     const myBookings = bookings.filter(
         (booking) => booking.userEmail === user?.email,
     );
@@ -36,9 +36,9 @@ export default function Dashboard() {
                 ["Pending", "Confirmed"].includes(booking.status),
         )
         .sort((a, b) => a.date.localeCompare(b.date));
-    const confirmed = myBookings.filter(
-        (booking) => booking.status === "Confirmed",
-    );
+    const pendingHostRequests = hostBookings.filter(
+        (booking) => booking.status === "Pending",
+    ).length;
     const stats = [
         {
             label: "Upcoming sessions",
@@ -59,10 +59,10 @@ export default function Dashboard() {
             to: "/wishlist",
         },
         {
-            label: "Confirmed bookings",
-            value: confirmed.length,
-            icon: CheckCircle2,
-            to: "/my-bookings",
+            label: "Booking requests",
+            value: pendingHostRequests,
+            icon: CalendarClock,
+            to: "/host-bookings",
         },
     ];
 
@@ -171,6 +171,7 @@ export default function Dashboard() {
                                             src={studio.images[0]}
                                             alt=""
                                             className="h-32 w-full rounded-2xl object-cover sm:h-25"
+                                            unoptimized
                                         />
                                         <div>
                                             <StatusBadge

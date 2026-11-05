@@ -27,7 +27,7 @@ interface FormState {
     capacity: string;
     location: string;
     address: string;
-    image: string;
+    images: string[];
     amenities: string[];
     overview: string;
     size: string;
@@ -42,12 +42,14 @@ const emptyForm: FormState = {
     capacity: "",
     location: "",
     address: "",
-    image: "",
+    images: [],
     amenities: [],
     overview: "",
     size: "",
     rules: "",
 };
+
+const MAX_STUDIO_IMAGES = 6;
 
 export default function StudioForm({ studio }: { studio?: Studio }) {
     const { user, addStudio, updateStudio } = useApp();
@@ -63,7 +65,7 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
                   capacity: String(studio.capacity),
                   location: studio.location,
                   address: studio.address,
-                  image: studio.images[0] ?? "",
+                  images: studio.images,
                   amenities: studio.amenities,
                   overview: studio.overview,
                   size: String(studio.size),
@@ -72,6 +74,8 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
             : emptyForm,
     );
     const [saving, setSaving] = useState(false);
+    const [imageUrl, setImageUrl] = useState("");
+    const [uploadingImages, setUploadingImages] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const update = <K extends keyof FormState>(
         field: K,
@@ -81,62 +85,148 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
         setErrors((current) => ({ ...current, [field]: "" }));
     };
 
-    const upload = async (file?: File) => {
-        if (!file) return;
-        if (!file.type.startsWith("image/")) {
-            toast.error("Choose a JPG, PNG, or WebP image for your studio.");
+    const addImage = (image: string) => {
+        setForm((current) =>
+            current.images.includes(image)
+                ? current
+                : { ...current, images: [...current.images, image] },
+        );
+        setErrors((current) => ({ ...current, images: "" }));
+    };
+
+    const addImageUrl = () => {
+        if (form.images.length >= MAX_STUDIO_IMAGES) {
+            toast.error(
+                `You can add up to ${MAX_STUDIO_IMAGES} studio images.`,
+            );
             return;
         }
+        const value = imageUrl.trim();
+        try {
+            const parsedUrl = new URL(value);
+            if (!["http:", "https:"].includes(parsedUrl.protocol)) {
+                throw new Error("Unsupported image URL protocol.");
+            }
+        } catch {
+            toast.error(
+                "Enter a valid image URL starting with http:// or https://.",
+            );
+            return;
+        }
+        if (form.images.includes(value)) {
+            toast.error("This image has already been added.");
+            return;
+        }
+        addImage(value);
+        setImageUrl("");
+        toast.success("Image URL added to your studio gallery.");
+    };
+
+    const upload = async (files?: FileList | null) => {
+        const selectedFiles = Array.from(files ?? []);
+        if (!selectedFiles.length) return;
+        const remainingSlots = MAX_STUDIO_IMAGES - form.images.length;
+        if (remainingSlots <= 0) {
+            toast.error(
+                `You can add up to ${MAX_STUDIO_IMAGES} studio images.`,
+            );
+            return;
+        }
+        if (selectedFiles.length > remainingSlots) {
+            toast.error(
+                `Only ${remainingSlots} more image${remainingSlots === 1 ? "" : "s"} can be added. The first ${remainingSlots} selected will be uploaded.`,
+            );
+        }
+        const filesToUpload = selectedFiles.slice(0, remainingSlots);
         const imgbbKey =
             process.env.NEXT_PUBLIC_IMGBB_API_KEY ||
             (typeof process !== "undefined" && process.env?.VITE_IMGBB_API_KEY);
-        if (imgbbKey) {
-            const loadingToast = toast.loading(
-                "Uploading studio image to ImgBB...",
-            );
-            try {
-                const formData = new FormData();
-                formData.append("image", file);
-                const response = await fetch(
-                    `https://api.imgbb.com/1/upload?key=${imgbbKey}`,
-                    {
-                        method: "POST",
-                        body: formData,
-                    },
-                );
-                const data = await response.json();
-                if (data?.success && data?.data?.url) {
-                    update("image", data.data.url);
-                    toast.dismiss(loadingToast);
-                    toast.success("Image uploaded to ImgBB successfully.");
-                    return;
+        const loadingToast = toast.loading(
+            `Adding ${filesToUpload.length} image${filesToUpload.length === 1 ? "" : "s"}...`,
+        );
+        let addedCount = 0;
+        setUploadingImages(true);
+        try {
+            for (const file of filesToUpload) {
+                if (
+                    !["image/jpeg", "image/png", "image/webp"].includes(
+                        file.type,
+                    )
+                ) {
+                    toast.error(
+                        `${file.name}: choose a JPG, PNG, or WebP image.`,
+                    );
+                    continue;
                 }
-            } catch {
-                toast.dismiss(loadingToast);
-                toast.error(
-                    "ImgBB upload failed, falling back to local preview.",
-                );
-            }
-        }
 
-        if (file.size > 900 * 1024) {
-            toast.error(
-                "For local saving, choose an image smaller than 900 KB.",
-            );
-            return;
+                let image: string | null = null;
+                if (imgbbKey) {
+                    try {
+                        const formData = new FormData();
+                        formData.append("image", file);
+                        const response = await fetch(
+                            `https://api.imgbb.com/1/upload?key=${imgbbKey}`,
+                            { method: "POST", body: formData },
+                        );
+                        const data = await response.json();
+                        if (response.ok && data?.success && data?.data?.url) {
+                            image = data.data.url;
+                        } else {
+                            toast.error(
+                                `${file.name}: image hosting upload failed.`,
+                            );
+                        }
+                    } catch {
+                        toast.error(
+                            `${file.name}: image hosting upload failed.`,
+                        );
+                    }
+                }
+
+                if (!image) {
+                    if (file.size > 900 * 1024) {
+                        toast.error(
+                            `${file.name}: local images must be smaller than 900 KB.`,
+                        );
+                        continue;
+                    }
+                    image = await new Promise<string | null>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                            resolve(
+                                typeof reader.result === "string"
+                                    ? reader.result
+                                    : null,
+                            );
+                        reader.onerror = () => resolve(null);
+                        reader.readAsDataURL(file);
+                    });
+                    if (!image) {
+                        toast.error(`${file.name}: image could not be read.`);
+                        continue;
+                    }
+                }
+
+                addImage(image);
+                addedCount += 1;
+            }
+        } finally {
+            setUploadingImages(false);
+            toast.dismiss(loadingToast);
         }
-        const reader = new FileReader();
-        reader.onload = () => {
-            update("image", String(reader.result));
-            toast.success("Studio image added. Your preview has been updated.");
-        };
-        reader.onerror = () =>
-            toast.error("That image could not be read. Try another file.");
-        reader.readAsDataURL(file);
+        if (addedCount) {
+            toast.success(
+                `${addedCount} image${addedCount === 1 ? "" : "s"} added to your studio gallery.`,
+            );
+        }
     };
 
     const submit = async (event: FormEvent) => {
         event.preventDefault();
+        if (uploadingImages) {
+            toast.error("Wait for image uploads to finish before saving.");
+            return;
+        }
         const nextErrors: Record<string, string> = {};
         if (form.title.trim().length < 3)
             nextErrors.title =
@@ -153,8 +243,8 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
             nextErrors.location = "Add the city and state.";
         if (!form.address.trim())
             nextErrors.address = "Add the full studio address.";
-        if (!form.image)
-            nextErrors.image = "Add an image URL or upload a studio photo.";
+        if (!form.images.length)
+            nextErrors.images = "Add at least one studio image.";
         if (form.overview.trim().length < 60)
             nextErrors.overview =
                 "Give creators at least 60 characters of useful detail.";
@@ -176,7 +266,7 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
             capacity: Number(form.capacity),
             location: form.location.trim(),
             address: form.address.trim(),
-            images: [form.image],
+            images: form.images,
             amenities: form.amenities,
             overview: form.overview.trim(),
             size: Number(form.size),
@@ -209,13 +299,13 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
     return (
         <form
             onSubmit={submit}
-            className="grid items-start gap-8 lg:grid-cols-[1fr_330px]"
+            className="grid min-w-0 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_330px]"
         >
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
                 <section className="form-section">
                     <div className="form-section-heading">
-                        <span>01</span>
-                        <div>
+                        <span className="shrink-0">01</span>
+                        <div className="min-w-0">
                             <h2>Studio essentials</h2>
                             <p>The clear, useful details creators see first.</p>
                         </div>
@@ -439,8 +529,8 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
 
                 <section className="form-section">
                     <div className="form-section-heading">
-                        <span>02</span>
-                        <div>
+                        <span className="shrink-0">02</span>
+                        <div className="min-w-0">
                             <h2>Show the space</h2>
                             <p>
                                 Use a bright, landscape photo that reflects the
@@ -449,69 +539,115 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
                         </div>
                     </div>
                     <div className="mt-7">
-                        <label htmlFor="studio-image" className="field-label">
-                            Primary image URL
+                        <label
+                            htmlFor="studio-image-url"
+                            className="field-label"
+                        >
+                            Studio images
                         </label>
-                        <div className="flex flex-col gap-3 sm:flex-row">
+                        <p className="mb-3 text-xs leading-5 text-muted">
+                            Add up to six views. The first image will be the
+                            main photo shown on your listing.
+                        </p>
+                        <div className="grid min-w-0 gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
                             <input
-                                id="studio-image"
-                                value={
-                                    form.image.startsWith("data:")
-                                        ? ""
-                                        : form.image
-                                }
+                                id="studio-image-url"
+                                type="url"
+                                value={imageUrl}
                                 onChange={(event) =>
-                                    update("image", event.target.value)
+                                    setImageUrl(event.target.value)
+                                }
+                                disabled={
+                                    uploadingImages ||
+                                    form.images.length >= MAX_STUDIO_IMAGES
                                 }
                                 className={cn(
-                                    "field flex-1",
-                                    errors.image && "field-error",
+                                    "field min-w-0 flex-1",
+                                    errors.images && "field-error",
                                 )}
-                                placeholder={
-                                    form.image.startsWith("data:")
-                                        ? "Uploaded image selected"
-                                        : "https://your-image-host.com/studio.jpg"
-                                }
-                                readOnly={form.image.startsWith("data:")}
+                                placeholder="https://your-image-host.com/studio.jpg"
                             />
                             <button
                                 type="button"
+                                onClick={addImageUrl}
+                                disabled={
+                                    !imageUrl.trim() ||
+                                    uploadingImages ||
+                                    form.images.length >= MAX_STUDIO_IMAGES
+                                }
+                                className="btn-secondary whitespace-nowrap"
+                            >
+                                <ImagePlus size={16} />
+                                Add URL
+                            </button>
+                            <button
+                                type="button"
                                 onClick={() => fileRef.current?.click()}
-                                className="btn-secondary shrink-0"
+                                disabled={
+                                    uploadingImages ||
+                                    form.images.length >= MAX_STUDIO_IMAGES
+                                }
+                                className="btn-secondary whitespace-nowrap"
                             >
                                 <Upload size={16} />
-                                Upload image
+                                {uploadingImages
+                                    ? "Adding images..."
+                                    : "Upload images"}
                             </button>
                             <input
                                 ref={fileRef}
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp"
+                                multiple
                                 className="hidden"
-                                onChange={(event) =>
-                                    upload(event.target.files?.[0])
-                                }
+                                onChange={(event) => {
+                                    void upload(event.target.files);
+                                    event.currentTarget.value = "";
+                                }}
                             />
                         </div>
-                        {errors.image && (
-                            <p className="field-error-text">{errors.image}</p>
+                        {errors.images && (
+                            <p className="field-error-text">{errors.images}</p>
                         )}
-                        {form.image ? (
-                            <div className="relative mt-4 aspect-16/8 overflow-hidden rounded-2xl bg-soft">
-                                <Image
-                                    height={5000}
-                                    width={5000}
-                                    src={form.image}
-                                    alt="Studio listing preview"
-                                    className="h-full w-full object-cover"
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => update("image", "")}
-                                    className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-sm"
-                                    aria-label="Remove image"
-                                >
-                                    <X size={16} />
-                                </button>
+                        {form.images.length ? (
+                            <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                                {form.images.map((image, index) => (
+                                    <div
+                                        key={`${image.slice(0, 80)}-${index}`}
+                                        className="group relative aspect-4/3 overflow-hidden rounded-2xl bg-soft"
+                                    >
+                                        <Image
+                                            height={600}
+                                            width={800}
+                                            src={image}
+                                            alt={`Studio photo ${index + 1}`}
+                                            className="h-full w-full object-cover"
+                                            unoptimized
+                                        />
+                                        {index === 0 && (
+                                            <span className="absolute left-2 top-2 rounded-full bg-black/65 px-2.5 py-1 text-[10px] font-semibold text-white backdrop-blur-sm">
+                                                Main photo
+                                            </span>
+                                        )}
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setForm((current) => ({
+                                                    ...current,
+                                                    images: current.images.filter(
+                                                        (_, imageIndex) =>
+                                                            imageIndex !==
+                                                            index,
+                                                    ),
+                                                }))
+                                            }
+                                            className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white backdrop-blur-sm transition hover:bg-black"
+                                            aria-label={`Remove studio photo ${index + 1}`}
+                                        >
+                                            <X size={15} />
+                                        </button>
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <button
@@ -524,7 +660,7 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
                                     Add your best studio view
                                 </span>
                                 <span className="mt-1 text-[10px]">
-                                    JPG, PNG or WebP · max 900 KB
+                                    Select multiple JPG, PNG or WebP images
                                 </span>
                             </button>
                         )}
@@ -533,8 +669,8 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
 
                 <section className="form-section">
                     <div className="form-section-heading">
-                        <span>03</span>
-                        <div>
+                        <span className="shrink-0">03</span>
+                        <div className="min-w-0">
                             <h2>Amenities & overview</h2>
                             <p>
                                 Help creators plan with confidence before they
@@ -659,7 +795,7 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
                 </section>
             </div>
 
-            <aside className="space-y-5 lg:sticky lg:top-28">
+            <aside className="min-w-0 space-y-5 lg:sticky lg:top-28">
                 <div className="rounded-[24px] border border-line bg-surface p-5">
                     <p className="eyebrow">Host account</p>
                     <div className="mt-5 space-y-4">
@@ -719,7 +855,7 @@ export default function StudioForm({ studio }: { studio?: Studio }) {
                 </div>
                 <button
                     type="submit"
-                    disabled={saving}
+                    disabled={saving || uploadingImages}
                     className="btn-primary min-h-13! w-full disabled:opacity-60"
                 >
                     {saving ? (

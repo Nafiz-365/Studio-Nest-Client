@@ -194,11 +194,29 @@
     }
 
     .nav-link {
-        @apply rounded-full px-4 py-2 text-sm font-medium text-muted transition hover:bg-soft hover:text-text;
+        @apply relative rounded-full px-4 py-2 text-sm font-medium text-muted transition hover:bg-soft hover:text-text;
+    }
+
+    .nav-link::after {
+        content: "";
+        position: absolute;
+        right: 1rem;
+        bottom: 0;
+        left: 1rem;
+        height: 3px;
+        border-radius: 9999px;
+        background: #e8793f;
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 220ms ease;
     }
 
     .nav-link-active {
-        @apply bg-soft text-text;
+        @apply text-text;
+    }
+
+    .nav-link-active::after {
+        transform: scaleX(1);
     }
 
     .icon-button {

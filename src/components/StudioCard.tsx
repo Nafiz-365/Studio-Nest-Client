@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowUpRight, Heart, MapPin, Star, Users } from "lucide-react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -21,19 +22,27 @@ export default function StudioCard({
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
+    const [savingWishlist, setSavingWishlist] = useState(false);
     const saved = wishlist.includes(studio.id);
 
-    const handleSave = () => {
-        const result = toggleWishlist(studio.id);
-        if (!result.ok) {
-            toast.error(result.message);
-            const currentUrl =
-                pathname +
-                (searchParams?.toString() ? `?${searchParams.toString()}` : "");
-            router.push(`/login?from=${encodeURIComponent(currentUrl)}`);
-            return;
+    const handleSave = async () => {
+        setSavingWishlist(true);
+        try {
+            const result = await toggleWishlist(studio.id);
+            if (!result.ok) {
+                toast.error(result.message);
+                const currentUrl =
+                    pathname +
+                    (searchParams?.toString()
+                        ? `?${searchParams.toString()}`
+                        : "");
+                router.push(`/login?from=${encodeURIComponent(currentUrl)}`);
+                return;
+            }
+            toast.success(result.message);
+        } finally {
+            setSavingWishlist(false);
         }
-        toast.success(result.message);
     };
 
     return (
@@ -61,6 +70,7 @@ export default function StudioCard({
                         alt={studio.title}
                         className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-[1.055]"
                         loading="lazy"
+                        unoptimized
                     />
                 </Link>
                 <div className="absolute left-4 top-4 rounded-full border border-white/20 bg-[#171915]/75 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.13em] text-white backdrop-blur-md">
@@ -68,7 +78,8 @@ export default function StudioCard({
                 </div>
                 <button
                     type="button"
-                    onClick={handleSave}
+                    onClick={() => void handleSave()}
+                    disabled={savingWishlist}
                     className={cn(
                         "absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-[#171915]/60 text-white backdrop-blur-md transition hover:scale-105 hover:bg-white hover:text-[#171915]",
                         saved && "bg-[#d9ff63] text-[#171915]",

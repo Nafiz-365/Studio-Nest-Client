@@ -15,7 +15,11 @@ workshops.
   detailed studio galleries.
 - Better Auth email/password authentication with optional Google OAuth.
 - Protected dashboards for adding, editing, and managing studio listings,
-  bookings, and saved studios.
+  incoming booking requests, bookings, and saved studios.
+- Studio listings support galleries of up to six images, with bounded local
+  image fallback when external image hosting is unavailable.
+- User-provided studio image URLs render directly without requiring a
+  preconfigured Next.js image host.
 - Server-backed booking requests with pending status, validation, cancellation,
   collision prevention, and downloadable PDF invoices.
 - Sonner toast notifications, confirmation dialogs, loading skeletons, empty
@@ -97,9 +101,10 @@ npm run lint     # Run ESLint
 ## Authentication notes
 
 Email/password authentication is handled by Better Auth and stored through the
-MongoDB adapter. Authenticated API mutations obtain a Better Auth JWT and send
-it to the Express API. Private routes are protected by Next.js proxy checks and
-the API independently verifies the JWT through the Better Auth JWKS endpoint.
+MongoDB adapter. Private browser requests use a same-origin Next.js route
+handler, which validates the HttpOnly Better Auth session and forwards a
+server-side JWT to the Express API. The browser does not receive the API JWT;
+the API independently verifies it through the Better Auth JWKS endpoint.
 
 Google OAuth is optional. Configure the Google credentials and add the matching
 callback URL in Google Cloud Console before enabling it in a deployed

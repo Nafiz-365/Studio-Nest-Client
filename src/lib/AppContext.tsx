@@ -19,7 +19,6 @@ import type {
     User,
 } from "../types";
 import { calculateHours, createId, getCurrentDate, toDateInput } from "./utils";
-import { getTokenFromClient } from "./getTokenFromClient";
 
 const STORAGE = {
     studios: "studionest.studios.v1",
@@ -41,18 +40,31 @@ function readStorage<T>(key: string, fallback: T): T {
     }
 }
 
-async function apiRequest(url: string, init: RequestInit, email?: string) {
-    const token = await getTokenFromClient();
+async function apiRequest(url: string, init: RequestInit) {
+    const backendUrl = new URL(url, API_BASE_URL);
+    const proxyUrl = `/api/backend${backendUrl.pathname}${backendUrl.search}`;
     const headers = new Headers(init.headers);
-    if (token) headers.set("Authorization", `Bearer ${token}`);
-    if (email) headers.set("x-user-email", email);
+    headers.delete("Authorization");
+    headers.delete("x-user-email");
 
-    const response = await fetch(url, { ...init, headers });
+    const response = await fetch(proxyUrl, {
+        ...init,
+        headers,
+        credentials: "same-origin",
+    });
     if (!response.ok) {
         const body = await response.text();
-        throw new Error(
-            body || `API request failed with status ${response.status}`,
-        );
+        let message = body;
+        try {
+            const parsed = JSON.parse(body) as {
+                error?: string;
+                message?: string;
+            };
+            message = parsed.error || parsed.message || body;
+        } catch {
+            // Keep the backend's plain-text response as the visible error.
+        }
+        throw new Error(message || `API request failed with status ${response.status}`);
     }
     return response;
 }
@@ -60,6 +72,9 @@ async function apiRequest(url: string, init: RequestInit, email?: string) {
 interface AppContextValue {
     studios: Studio[];
     bookings: Booking[];
+    hostBookings: Booking[];
+    isHostBookingsLoading: boolean;
+    hostBookingsError: string | null;
     user: User | null;
     theme: "light" | "dark";
     wishlist: string[];
@@ -78,8 +93,13 @@ interface AppContextValue {
     updateStudio: (id: string, draft: StudioDraft) => Promise<ActionResult>;
     deleteStudio: (id: string) => Promise<ActionResult>;
     addBooking: (input: BookingInput) => Promise<ActionResult>;
-    cancelBooking: (id: string) => ActionResult;
-    toggleWishlist: (studioId: string) => ActionResult;
+    cancelBooking: (id: string) => Promise<ActionResult>;
+    refreshMyBookings: () => Promise<void>;
+    respondToBooking: (
+        id: string,
+        decision: "confirm" | "decline",
+    ) => Promise<ActionResult>;
+    toggleWishlist: (studioId: string) => Promise<ActionResult>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -88,6 +108,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [isHydrated, setIsHydrated] = useState(false);
     const [studios, setStudios] = useState<Studio[]>(seedStudios);
     const [bookings, setBookings] = useState<Booking[]>([]);
+    const [hostBookings, setHostBookings] = useState<Booking[]>([]);
+    const [isHostBookingsLoading, setIsHostBookingsLoading] = useState(false);
+    const [hostBookingsError, setHostBookingsError] = useState<string | null>(
+        null,
+    );
     const [user, setUser] = useState<User | null>(null);
     const [wishlistMap, setWishlistMap] = useState<Record<string, string[]>>(
         {},
@@ -181,6 +206,81 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         const email = authSession?.user?.email;
+        let ignore = false;
+        if (!email) {
+            void Promise.resolve().then(() => {
+                if (ignore) return;
+                setHostBookings([]);
+                setHostBookingsError(null);
+                setIsHostBookingsLoading(false);
+            });
+            return () => {
+                ignore = true;
+            };
+        }
+
+        void Promise.resolve().then(() => {
+            if (ignore) return;
+            setIsHostBookingsLoading(true);
+            setHostBookingsError(null);
+        });
+        apiRequest(`${API_BASE_URL}/host-bookings`, {})
+            .then((response) => response.json())
+            .then((data: unknown) => {
+                if (!Array.isArray(data)) {
+                    throw new Error(
+                        "The host booking API returned an invalid response.",
+                    );
+                }
+                if (!ignore) {
+                    setHostBookings(
+                        data.map(
+                            (item: Booking & {
+                                _id?: string;
+                                cancellationReason?: string;
+                            }) => ({
+                                ...item,
+                                id:
+                                    item.id ||
+                                    (item._id
+                                        ? String(item._id)
+                                        : createId("booking")),
+                                status:
+                                    item.status === "Cancelled" &&
+                                    item.cancellationReason ===
+                                        "Declined by host"
+                                        ? "Declined"
+                                        : item.status,
+                            }),
+                        ),
+                    );
+                }
+            })
+            .catch((error: unknown) => {
+                if (!ignore) {
+                    console.error(
+                        "Failed to load host booking requests.",
+                        error,
+                    );
+                    setHostBookings([]);
+                    setHostBookingsError(
+                        error instanceof Error
+                            ? error.message
+                            : "Booking requests could not be loaded.",
+                    );
+                }
+            })
+            .finally(() => {
+                if (!ignore) setIsHostBookingsLoading(false);
+            });
+
+        return () => {
+            ignore = true;
+        };
+    }, [authSession?.user?.email]);
+
+    useEffect(() => {
+        const email = authSession?.user?.email;
         if (!email) return;
 
         const loadAccountData = async () => {
@@ -190,17 +290,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         apiRequest(
                             `${API_BASE_URL}/my-studios/${encodeURIComponent(email)}`,
                             {},
-                            email,
                         ),
                         apiRequest(
                             `${API_BASE_URL}/my-bookings/${encodeURIComponent(email)}`,
                             {},
-                            email,
                         ),
                         apiRequest(
                             `${API_BASE_URL}/wishlist/${encodeURIComponent(email)}`,
                             {},
-                            email,
                         ),
                     ]);
 
@@ -235,13 +332,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (Array.isArray(accountBookings)) {
                     setBookings(
                         accountBookings.map(
-                            (item: Booking & { _id?: string }) => ({
+                            (item: Booking & {
+                                _id?: string;
+                                cancellationReason?: string;
+                            }) => ({
                                 ...item,
                                 id:
                                     item.id ||
                                     (item._id
                                         ? String(item._id)
                                         : createId("booking")),
+                                status:
+                                    item.status === "Cancelled" &&
+                                    item.cancellationReason ===
+                                        "Declined by host"
+                                        ? "Declined"
+                                        : item.status,
                             }),
                         ),
                     );
@@ -320,6 +426,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         () => ({
             studios,
             bookings,
+            hostBookings,
+            isHostBookingsLoading,
+            hostBookingsError,
             user,
             theme,
             wishlist,
@@ -399,7 +508,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             },
                             body: JSON.stringify(studio),
                         },
-                        user.email,
                     );
                     const data = (await response.json()) as {
                         studio?: Studio & { _id?: string };
@@ -460,7 +568,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             },
                             body: JSON.stringify(draft),
                         },
-                        user.email,
                     );
                 } catch (error) {
                     console.error("Failed to update studio on the API.", error);
@@ -509,7 +616,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         {
                             method: "DELETE",
                         },
-                        user.email,
                     );
                 } catch (error) {
                     console.error("Failed to delete studio on the API.", error);
@@ -618,7 +724,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
                                 studioTitle: studio.title,
                             }),
                         },
-                        user.email,
                     );
                     const data = (await response.json()) as {
                         booking?: Booking & { _id?: string };
@@ -654,7 +759,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     id,
                 };
             },
-            cancelBooking: (id) => {
+            cancelBooking: async (id) => {
                 if (!user)
                     return {
                         ok: false,
@@ -672,6 +777,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         message:
                             "Only pending reservations can be cancelled here.",
                     };
+                try {
+                    await apiRequest(`${API_BASE_URL}/booking/${id}/cancel`, {
+                        method: "PATCH",
+                    });
+                } catch (error) {
+                    console.error("Failed to cancel booking on the API.", error);
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The booking could not be cancelled. Please try again.",
+                    };
+                }
                 setBookings((current) =>
                     current.map((item) =>
                         item.id === id
@@ -679,25 +798,147 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : item,
                     ),
                 );
-                apiRequest(
-                    `${API_BASE_URL}/booking/${id}/cancel`,
-                    {
-                        method: "PATCH",
-                        headers: {},
-                    },
-                    user.email,
-                ).catch((error: unknown) => {
-                    console.error(
-                        "Failed to cancel booking on the API.",
-                        error,
-                    );
-                });
                 return {
                     ok: true,
-                    message: "Booking cancelled. The host has been notified.",
+                    message: "Your booking request has been cancelled.",
                 };
             },
-            toggleWishlist: (studioId) => {
+            refreshMyBookings: async () => {
+                const email = authSession?.user?.email;
+                if (!email) return;
+
+                try {
+                    const response = await apiRequest(
+                        `${API_BASE_URL}/my-bookings/${encodeURIComponent(email)}`,
+                        {},
+                    );
+                    const accountBookings = (await response.json()) as unknown;
+                    if (!Array.isArray(accountBookings)) {
+                        throw new Error(
+                            "The bookings API returned an invalid response.",
+                        );
+                    }
+
+                    const refreshedBookings = accountBookings.map(
+                        (item: Booking & {
+                            _id?: string;
+                            cancellationReason?: string;
+                        }) => ({
+                            ...item,
+                            id:
+                                item.id ||
+                                (item._id
+                                    ? String(item._id)
+                                    : createId("booking")),
+                            status:
+                                item.status === "Cancelled" &&
+                                item.cancellationReason === "Declined by host"
+                                    ? "Declined"
+                                    : item.status,
+                        }),
+                    );
+                    setBookings((current) => {
+                        const otherBookings = current.filter(
+                            (item) =>
+                                item.userEmail?.toLowerCase() !==
+                                email.toLowerCase(),
+                        );
+                        const currentById = new Map(
+                            current
+                                .filter(
+                                    (item) =>
+                                        item.userEmail?.toLowerCase() ===
+                                        email.toLowerCase(),
+                                )
+                                .map((item) => [item.id, item]),
+                        );
+                        const hasChanges =
+                            currentById.size !== refreshedBookings.length ||
+                            refreshedBookings.some((item) => {
+                                const existing = currentById.get(item.id);
+                                return (
+                                    !existing ||
+                                    existing.status !== item.status ||
+                                    existing.createdAt !== item.createdAt
+                                );
+                            });
+
+                        return hasChanges
+                            ? [...otherBookings, ...refreshedBookings]
+                            : current;
+                    });
+                } catch (error) {
+                    console.error("Failed to refresh account bookings.", error);
+                }
+            },
+            respondToBooking: async (id, decision) => {
+                const booking = hostBookings.find((item) => item.id === id);
+                if (!booking || booking.status !== "Pending") {
+                    return {
+                        ok: false,
+                        message: "This pending booking request could not be found.",
+                    };
+                }
+
+                try {
+                    const response = await apiRequest(
+                        `${API_BASE_URL}/booking/${encodeURIComponent(id)}/host-decision`,
+                        {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ decision }),
+                        },
+                    );
+                    const data = (await response.json()) as {
+                        status?: Booking["status"];
+                        message?: string;
+                    };
+                    if (
+                        data.status !== "Confirmed" &&
+                        data.status !== "Declined"
+                    ) {
+                        throw new Error(
+                            "The booking API returned an invalid decision status.",
+                        );
+                    }
+                    const updatedStatus = data.status;
+                    setHostBookings((current) =>
+                        current.map((item) =>
+                            item.id === id
+                                ? { ...item, status: updatedStatus }
+                                : item,
+                        ),
+                    );
+                    setBookings((current) =>
+                        current.map((item) =>
+                            item.id === id
+                                ? { ...item, status: updatedStatus }
+                                : item,
+                        ),
+                    );
+                    return {
+                        ok: true,
+                        message:
+                            data.message ||
+                            (decision === "confirm"
+                                ? "Booking request confirmed."
+                                : "Booking request declined."),
+                    };
+                } catch (error) {
+                    console.error(
+                        "Failed to respond to booking request.",
+                        error,
+                    );
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The booking request could not be updated.",
+                    };
+                }
+            },
+            toggleWishlist: async (studioId) => {
                 if (!user)
                     return {
                         ok: false,
@@ -706,39 +947,59 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 const exists = (wishlistMap[user.email] ?? []).includes(
                     studioId,
                 );
-                setWishlistMap((current) => {
-                    const saved = current[user.email] ?? [];
-                    return {
-                        ...current,
-                        [user.email]: exists
-                            ? saved.filter((id) => id !== studioId)
-                            : [...saved, studioId],
-                    };
-                });
-                apiRequest(
-                    `${API_BASE_URL}/wishlist`,
-                    {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ email: user.email, studioId }),
-                    },
-                    user.email,
-                ).catch((error: unknown) => {
-                    console.error(
-                        "Failed to update wishlist on the API.",
-                        error,
+                try {
+                    const response = await apiRequest(
+                        `${API_BASE_URL}/wishlist`,
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                email: user.email,
+                                studioId,
+                                saved: !exists,
+                            }),
+                        },
                     );
-                });
-                return {
-                    ok: true,
-                    message: exists
-                        ? "Removed from your saved studios."
-                        : "Saved to your creative shortlist.",
-                };
+                    const data = (await response.json()) as {
+                        wishlist?: string[];
+                        saved?: boolean;
+                    };
+                    const updatedWishlist = data.wishlist;
+                    if (
+                        !Array.isArray(updatedWishlist) ||
+                        typeof data.saved !== "boolean"
+                    ) {
+                        throw new Error(
+                            "The wishlist API returned an invalid response.",
+                        );
+                    }
+                    setWishlistMap((current) => ({
+                        ...current,
+                        [user.email]: updatedWishlist,
+                    }));
+                    return {
+                        ok: true,
+                        message: data.saved
+                            ? "Saved to your creative shortlist."
+                            : "Removed from your saved studios.",
+                    };
+                } catch (error) {
+                    console.error("Failed to update wishlist on the API.", error);
+                    return {
+                        ok: false,
+                        message:
+                            error instanceof Error
+                                ? error.message
+                                : "The wishlist could not be updated. Please try again.",
+                    };
+                }
             },
         }),
         [
             bookings,
+            hostBookings,
+            isHostBookingsLoading,
+            hostBookingsError,
             setBookings,
             setStudios,
             setUser,
@@ -750,6 +1011,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             wishlistMap,
             isHydrated,
             authPending,
+            authSession?.user?.email,
         ],
     );
 

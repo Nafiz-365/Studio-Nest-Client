@@ -1,25 +1,33 @@
 "use client";
 
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useSyncExternalStore, type ReactNode } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useApp } from "@/lib/AppContext";
 import { PageLoader } from "@/components/Loaders";
+
+const subscribe = () => () => {};
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export default function ProtectedRoute({ children }: { children: ReactNode }) {
     const { user, isHydrated, isAuthPending } = useApp();
     const router = useRouter();
     const pathname = usePathname();
+    const hasMounted = useSyncExternalStore(
+        subscribe,
+        getClientSnapshot,
+        getServerSnapshot,
+    );
 
     useEffect(() => {
-        if (isHydrated && !isAuthPending && !user) {
+        if (hasMounted && isHydrated && !isAuthPending && !user) {
             router.replace(
                 `/login?from=${encodeURIComponent(pathname || "/")}`,
             );
         }
-    }, [isHydrated, isAuthPending, user, router, pathname]);
+    }, [hasMounted, isHydrated, isAuthPending, user, router, pathname]);
 
-    // While checking local session or if not authenticated yet, show clean loader
-    if (!isHydrated || isAuthPending || !user) {
+    if (!hasMounted || !isHydrated || isAuthPending || !user) {
         return <PageLoader />;
     }
 

@@ -67,6 +67,7 @@ const slides = [
         text: "Find sound stages, pre-rigged sets, and production-ready rooms with the specifications your crew actually needs.",
         tag: "Stage 04 · Los Angeles",
     },
+
     {
         image: "/images/studio-podcast-dark.jpg",
         eyebrow: "Press record on something original",
@@ -214,13 +215,14 @@ export default function HomePage({
                             }
                             className="h-full w-full"
                         >
-                            {slides.map((slide) => (
+                            {slides.map((slide, index) => (
                                 <SwiperSlide key={slide.image}>
                                     <Image
                                         height={5000}
                                         width={5000}
                                         src={slide.image}
                                         alt="Creative studio interior"
+                                        loading={index === 0 ? "eager" : "lazy"}
                                         className="h-full w-full object-cover brightness-[.72] saturate-[.82] transition duration-1000"
                                     />
                                 </SwiperSlide>
@@ -268,7 +270,7 @@ export default function HomePage({
                                 </Link>
                             </div>
                         </div>
-                        <div className="absolute bottom-5 right-4 z-40 flex max-w-[calc(100%-2rem)] items-center gap-2 rounded-full border border-white/10 bg-black/20 px-2 py-1.5 shadow-lg shadow-black/10 backdrop-blur-md transition-[background-color,border-color,transform] duration-500 ease-out sm:bottom-6 sm:right-8 sm:gap-3 sm:px-2.5 sm:py-2 lg:right-10">
+                        <div className="absolute bottom-5 left-4 right-4 z-40 flex w-auto max-w-[calc(100%-2rem)] items-center justify-between gap-2 rounded-full border border-white/10 bg-black/20 px-2 py-1.5 shadow-lg shadow-black/10 backdrop-blur-md transition-[background-color,border-color,transform] duration-500 ease-out sm:bottom-6 sm:left-auto sm:right-8 sm:w-max sm:max-w-[calc(100%-4rem)] sm:justify-normal sm:gap-3 sm:px-2.5 sm:py-2 md:gap-3">
                             <div className="hidden items-center gap-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-white/45 md:flex">
                                 <ArrowDown
                                     size={15}
@@ -276,7 +278,7 @@ export default function HomePage({
                                 />
                                 Scroll to discover
                             </div>
-                            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+                            <div className="flex min-w-0 flex-1 items-center justify-between gap-2 sm:flex-none sm:justify-normal sm:gap-3 md:gap-4">
                                 <span className="font-display text-sm text-white/75">
                                     0{activeSlide + 1}
                                     <span className="mx-2 text-white/30">
@@ -285,7 +287,7 @@ export default function HomePage({
                                     <span className="text-white/35">03</span>
                                 </span>
                                 <div
-                                    className="flex w-20 gap-1.5 sm:w-28 sm:gap-2 md:w-48"
+                                    className="flex w-14 shrink gap-1.5 min-[400px]:w-20 sm:w-28 sm:gap-2 md:w-48"
                                     role="tablist"
                                     aria-label="Hero slides"
                                 >
@@ -330,7 +332,7 @@ export default function HomePage({
                                 onClick={() =>
                                     setIsHeroPaused((paused) => !paused)
                                 }
-                                className="icon-button h-9! w-9! border-white/20! bg-white/10! text-white! hover:border-[#d9ff63]! hover:bg-[#d9ff63]! hover:text-[#171915]!"
+                                className="icon-button h-9! w-9! shrink-0 border-white/20! bg-white/10! text-white! hover:border-[#d9ff63]! hover:bg-[#d9ff63]! hover:text-[#171915]!"
                                 aria-label={
                                     isHeroPaused
                                         ? "Play hero slideshow"
@@ -343,7 +345,7 @@ export default function HomePage({
                                     <Pause size={14} />
                                 )}
                             </button>
-                            <div className="flex items-center gap-1 sm:hidden">
+                            <div className="flex shrink-0 items-center gap-1 sm:hidden">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -365,7 +367,7 @@ export default function HomePage({
                                     <ArrowRight size={14} />
                                 </Button>
                             </div>
-                            <p className="hidden max-w-45 text-right text-[10px] uppercase tracking-[0.15em] text-white/45 lg:block">
+                            <p className="hidden shrink-0 whitespace-nowrap text-right text-[10px] uppercase tracking-[0.15em] text-white/45 lg:block">
                                 {slides[activeSlide].tag}
                             </p>
                         </div>

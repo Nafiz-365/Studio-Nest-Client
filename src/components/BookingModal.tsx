@@ -255,6 +255,7 @@ export default function BookingModal({
                         src={studio.images[0]}
                         alt=""
                         className="h-28 w-full rounded-xl object-cover"
+                        unoptimized
                     />
                     <h3 className="mt-4 font-display text-lg font-semibold leading-tight tracking-[-0.035em]">
                         {studio.title}

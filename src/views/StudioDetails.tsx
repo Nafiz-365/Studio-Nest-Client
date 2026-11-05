@@ -63,6 +63,7 @@ export default function StudioDetails({
     const [bookingOpen, setBookingOpen] = useState(false);
     const [gallery, setGallery] = useState<SwiperType | null>(null);
     const [activeImage, setActiveImage] = useState(0);
+    const [savingWishlist, setSavingWishlist] = useState(false);
     const router = useRouter();
     const pathname = usePathname();
     const availability = useMemo(
@@ -122,12 +123,19 @@ export default function StudioDetails({
         }
         setBookingOpen(true);
     };
-    const handleSave = () => {
-        const result = toggleWishlist(studio.id);
-        if (!result.ok) {
-            toast.error(result.message);
-            router.push("/login?from=" + encodeURIComponent(pathname || "/"));
-        } else toast.success(result.message);
+    const handleSave = async () => {
+        setSavingWishlist(true);
+        try {
+            const result = await toggleWishlist(studio.id);
+            if (!result.ok) {
+                toast.error(result.message);
+                router.push(
+                    "/login?from=" + encodeURIComponent(pathname || "/"),
+                );
+            } else toast.success(result.message);
+        } finally {
+            setSavingWishlist(false);
+        }
     };
     const share = async () => {
         try {
@@ -171,7 +179,8 @@ export default function StudioDetails({
                         </button>
                         <button
                             type="button"
-                            onClick={handleSave}
+                            onClick={() => void handleSave()}
+                            disabled={savingWishlist}
                             className={cn(
                                 "btn-ghost min-h-9! px-3! text-xs",
                                 saved && "text-[#789b27]",
@@ -223,6 +232,7 @@ export default function StudioDetails({
                                         src={image}
                                         alt={`${studio.title}, view ${index + 1}`}
                                         className="h-full w-full object-cover"
+                                        unoptimized
                                     />
                                 </SwiperSlide>
                             ))}
@@ -268,6 +278,7 @@ export default function StudioDetails({
                                     src={image}
                                     alt=""
                                     className="absolute inset-0 h-full w-full object-cover"
+                                    unoptimized
                                 />
                                 {index === studio.images.length - 1 && (
                                     <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/55 px-2 py-1 text-[9px] text-white backdrop-blur-sm">

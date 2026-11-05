@@ -27,6 +27,7 @@ export const config = {
         "/dashboard/:path*",
         "/add-studio/:path*",
         "/my-bookings/:path*",
+        "/host-bookings/:path*",
         "/my-listings/:path*",
         "/wishlist/:path*",
         "/profile/:path*",

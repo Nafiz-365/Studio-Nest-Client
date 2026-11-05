@@ -9,6 +9,7 @@ const variantMap: Record<
     Confirmed: "default",
     Completed: "outline",
     Cancelled: "destructive",
+    Declined: "destructive",
 };
 
 export default function StatusBadge({ status }: { status: BookingStatus }) {

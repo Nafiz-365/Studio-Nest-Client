@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
     Bookmark,
+    CalendarClock,
     LayoutDashboard,
     LogOut,
     Menu,
@@ -18,7 +19,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useApp } from "../lib/AppContext";
-import { cn, getInitials } from "../lib/utils";
+import { cn } from "../lib/utils";
 import Logo from "./Logo";
 import {
     Avatar as ShadcnAvatar,
@@ -51,10 +52,27 @@ export function Avatar({
     photoURL?: string;
     className?: string;
 }) {
+    const initial = name.trim().charAt(0).toLocaleUpperCase() || "U";
+
+    if (!photoURL?.trim()) {
+        return (
+            <span
+                role="img"
+                aria-label={`${name || "User"} profile`}
+                className={cn(
+                    "flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-soft font-semibold text-text",
+                    className,
+                )}
+            >
+                {initial}
+            </span>
+        );
+    }
+
     return (
         <ShadcnAvatar className={cn("h-10 w-10", className)}>
             <AvatarImage src={photoURL} alt={name} />
-            <AvatarFallback>{getInitials(name)}</AvatarFallback>
+            <AvatarFallback>{initial}</AvatarFallback>
         </ShadcnAvatar>
     );
 }
@@ -98,6 +116,7 @@ export default function Header() {
                             <Link
                                 key={link.to}
                                 href={link.to}
+                                aria-current={isActive ? "page" : undefined}
                                 className={cn(
                                     "nav-link",
                                     isActive && "nav-link-active",
@@ -140,15 +159,11 @@ export default function Header() {
                                     className="flex items-center gap-2 rounded-full border border-line bg-surface p-1 pr-3 transition hover:border-[#a9c95a]"
                                     aria-label="Open account menu"
                                 >
-                                    <ShadcnAvatar className="h-8 w-8">
-                                        <AvatarImage
-                                            src={visibleUser.photoURL}
-                                            alt={visibleUser.name}
-                                        />
-                                        <AvatarFallback>
-                                            {getInitials(visibleUser.name)}
-                                        </AvatarFallback>
-                                    </ShadcnAvatar>
+                                    <Avatar
+                                        name={visibleUser.name}
+                                        photoURL={visibleUser.photoURL}
+                                        className="h-8 w-8"
+                                    />
                                     <span className="hidden max-w-28 truncate text-xs font-semibold text-text sm:block">
                                         {visibleUser.name}
                                     </span>
@@ -209,6 +224,15 @@ export default function Header() {
                                             className="text-muted"
                                         />
                                         My Bookings
+                                    </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/host-bookings">
+                                        <CalendarClock
+                                            size={16}
+                                            className="text-muted"
+                                        />
+                                        Booking Requests
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
@@ -286,6 +310,9 @@ export default function Header() {
                                     >
                                         <Link
                                             href={link.to}
+                                            aria-current={
+                                                isActive ? "page" : undefined
+                                            }
                                             className={cn(
                                                 "block rounded-xl px-4 py-3 font-display text-lg font-medium",
                                                 isActive

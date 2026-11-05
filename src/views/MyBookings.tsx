@@ -10,7 +10,7 @@ import {
     Users,
     X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import ConfirmModal from "../components/ConfirmModal";
@@ -28,12 +28,37 @@ const filters: Array<"All" | BookingStatus> = [
     "Confirmed",
     "Completed",
     "Cancelled",
+    "Declined",
 ];
 
 export default function MyBookings() {
-    const { bookings, studios, user, cancelBooking } = useApp();
+    const { bookings, studios, user, cancelBooking, refreshMyBookings } =
+        useApp();
     const [filter, setFilter] = useState<(typeof filters)[number]>("All");
     const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+    const [cancelling, setCancelling] = useState(false);
+    useEffect(() => {
+        const refreshWhenVisible = () => {
+            if (document.visibilityState === "visible") {
+                void refreshMyBookings();
+            }
+        };
+
+        refreshWhenVisible();
+        const interval = window.setInterval(refreshWhenVisible, 5000);
+        window.addEventListener("focus", refreshWhenVisible);
+        document.addEventListener("visibilitychange", refreshWhenVisible);
+
+        return () => {
+            window.clearInterval(interval);
+            window.removeEventListener("focus", refreshWhenVisible);
+            document.removeEventListener(
+                "visibilitychange",
+                refreshWhenVisible,
+            );
+        };
+    }, [refreshMyBookings]);
+
     const mine = useMemo(
         () =>
             bookings
@@ -46,11 +71,20 @@ export default function MyBookings() {
             ? mine
             : mine.filter((booking) => booking.status === filter);
 
-    const confirmCancel = () => {
+    const confirmCancel = async () => {
         if (!cancelTarget) return;
-        const result = cancelBooking(cancelTarget.id);
-        if (result.ok) toast.success(result.message);
-        else toast.error(result.message);
+        setCancelling(true);
+        try {
+            const result = await cancelBooking(cancelTarget.id);
+            if (result.ok) {
+                toast.success(result.message);
+                setCancelTarget(null);
+            } else {
+                toast.error(result.message);
+            }
+        } finally {
+            setCancelling(false);
+        }
     };
 
     return (
@@ -125,6 +159,7 @@ export default function MyBookings() {
                                                 src={studio.images[0]}
                                                 alt={studio.title}
                                                 className="absolute inset-0 h-full w-full object-cover transition duration-500 hover:scale-105"
+                                                unoptimized
                                             />
                                             <div className="absolute left-4 top-4">
                                                 <StatusBadge
@@ -147,6 +182,21 @@ export default function MyBookings() {
                                                     <p className="mt-2 flex items-center gap-1.5 text-xs text-muted">
                                                         <MapPin size={13} />
                                                         {studio.location}
+                                                    </p>
+                                                    <p className="mt-2 text-xs text-muted">
+                                                        {booking.status ===
+                                                        "Confirmed"
+                                                            ? "The host confirmed your booking."
+                                                            : booking.status ===
+                                                                "Declined"
+                                                              ? "The host declined this booking request."
+                                                              : booking.status ===
+                                                                  "Pending"
+                                                                ? "Waiting for the host to review your request."
+                                                                : booking.status ===
+                                                                    "Cancelled"
+                                                                  ? "This booking request was cancelled."
+                                                                  : "This booking is complete."}
                                                     </p>
                                                 </div>
                                                 <div className="sm:text-right">
@@ -289,7 +339,7 @@ export default function MyBookings() {
                         ? `Your pending request for ${formatDate(cancelTarget.date)} will be marked as cancelled. You can always request a new time later.`
                         : ""
                 }
-                confirmLabel="Cancel booking"
+                confirmLabel={cancelling ? "Cancelling…" : "Cancel booking"}
                 onConfirm={confirmCancel}
             />
         </div>
