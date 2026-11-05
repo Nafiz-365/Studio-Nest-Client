@@ -6,8 +6,7 @@ workshops.
 
 ## Live application
 
-> Add the deployed frontend URL here before submission. The repository currently
-> contains local development URLs only.
+[StudioNest Live URL](https://studio-nest-client.vercel.app/)
 
 ## Highlights
 
@@ -56,7 +55,7 @@ src/
 
 ```bash
 npm install
-Copy-Item .env.example .env
+Copy-Item .env.example -> .env
 npm run dev
 ```
 
