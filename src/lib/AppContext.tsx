@@ -64,7 +64,9 @@ async function apiRequest(url: string, init: RequestInit) {
         } catch {
             // Keep the backend's plain-text response as the visible error.
         }
-        throw new Error(message || `API request failed with status ${response.status}`);
+        throw new Error(
+            message || `API request failed with status ${response.status}`,
+        );
     }
     return response;
 }
@@ -235,10 +237,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (!ignore) {
                     setHostBookings(
                         data.map(
-                            (item: Booking & {
-                                _id?: string;
-                                cancellationReason?: string;
-                            }) => ({
+                            (
+                                item: Booking & {
+                                    _id?: string;
+                                    cancellationReason?: string;
+                                },
+                            ) => ({
                                 ...item,
                                 id:
                                     item.id ||
@@ -332,10 +336,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (Array.isArray(accountBookings)) {
                     setBookings(
                         accountBookings.map(
-                            (item: Booking & {
-                                _id?: string;
-                                cancellationReason?: string;
-                            }) => ({
+                            (
+                                item: Booking & {
+                                    _id?: string;
+                                    cancellationReason?: string;
+                                },
+                            ) => ({
                                 ...item,
                                 id:
                                     item.id ||
@@ -559,16 +565,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     };
                 }
                 try {
-                    await apiRequest(
-                        `${API_BASE_URL}/studio/${id}`,
-                        {
-                            method: "PATCH",
-                            headers: {
-                                "Content-Type": "application/json",
-                            },
-                            body: JSON.stringify(draft),
+                    await apiRequest(`${API_BASE_URL}/studio/${id}`, {
+                        method: "PATCH",
+                        headers: {
+                            "Content-Type": "application/json",
                         },
-                    );
+                        body: JSON.stringify(draft),
+                    });
                 } catch (error) {
                     console.error("Failed to update studio on the API.", error);
                     return {
@@ -611,12 +614,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     };
                 }
                 try {
-                    await apiRequest(
-                        `${API_BASE_URL}/studio/${id}`,
-                        {
-                            method: "DELETE",
-                        },
-                    );
+                    await apiRequest(`${API_BASE_URL}/studio/${id}`, {
+                        method: "DELETE",
+                    });
                 } catch (error) {
                     console.error("Failed to delete studio on the API.", error);
                     return {
@@ -782,7 +782,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                         method: "PATCH",
                     });
                 } catch (error) {
-                    console.error("Failed to cancel booking on the API.", error);
+                    console.error(
+                        "Failed to cancel booking on the API.",
+                        error,
+                    );
                     return {
                         ok: false,
                         message:
@@ -820,10 +823,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
                     }
 
                     const refreshedBookings = accountBookings.map(
-                        (item: Booking & {
-                            _id?: string;
-                            cancellationReason?: string;
-                        }) => ({
+                        (
+                            item: Booking & {
+                                _id?: string;
+                                cancellationReason?: string;
+                            },
+                        ) => ({
                             ...item,
                             id:
                                 item.id ||
@@ -876,7 +881,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 if (!booking || booking.status !== "Pending") {
                     return {
                         ok: false,
-                        message: "This pending booking request could not be found.",
+                        message:
+                            "This pending booking request could not be found.",
                     };
                 }
 
@@ -984,7 +990,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
                             : "Removed from your saved studios.",
                     };
                 } catch (error) {
-                    console.error("Failed to update wishlist on the API.", error);
+                    console.error(
+                        "Failed to update wishlist on the API.",
+                        error,
+                    );
                     return {
                         ok: false,
                         message:
